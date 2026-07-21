@@ -1,35 +1,51 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { useState } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import Navbar from "./components/Navbar";
+import Sidebar from "./components/Sidebar";
 
-function App() {
-  const [count, setCount] = useState(0)
+import Login from "./pages/Login";
+import OAuthSuccess from "./pages/OAuthSuccess";
+import Dashboard from "./pages/Dashboard";
+import UploadDocument from "./pages/UploadDocument";
+import DocumentList from "./pages/DocumentList";
+import DocumentDetail from "./pages/DocumentDetail";
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+// Route protection wrapper
+function ProtectedRoute({ children }) {
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+        return <Navigate to="/login" replace />;
+    }
+    return children;
 }
 
-export default App
+function App() {
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+
+    return (
+        <BrowserRouter>
+            <Navbar onMenuClick={() => setSidebarOpen(true)} />
+            <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+            <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/oauth-success" element={<OAuthSuccess />} />
+
+                <Route path="/" element={
+                    <ProtectedRoute><Dashboard /></ProtectedRoute>
+                } />
+                <Route path="/upload" element={
+                    <ProtectedRoute><UploadDocument /></ProtectedRoute>
+                } />
+                <Route path="/documents" element={
+                    <ProtectedRoute><DocumentList /></ProtectedRoute>
+                } />
+                <Route path="/documents/:id" element={
+                    <ProtectedRoute><DocumentDetail /></ProtectedRoute>
+                } />
+            </Routes>
+        </BrowserRouter>
+    );
+}
+
+export default App;
