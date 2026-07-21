@@ -2,9 +2,13 @@ import React, { useEffect, useState } from "react";
 import { Container, Typography, Button, Box, IconButton, Alert } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
+import DriveFileMoveIcon from "@mui/icons-material/DriveFileMove";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import api from "../api/axios";
 import { useParams, useNavigate } from "react-router-dom";
+import EditDocumentModal from "../components/EditDocumentModal";
+import MoveDocumentModal from "../components/MoveDocumentModal";
 
 export default function DocumentDetail() {
     const { id } = useParams();
@@ -12,14 +16,33 @@ export default function DocumentDetail() {
     const [doc, setDoc] = useState(null);
     const [error, setError] = useState(null);
     const [deleting, setDeleting] = useState(false);
+    const [editOpen, setEditOpen] = useState(false);
+    const [moveOpen, setMoveOpen] = useState(false);
+
+    const loadDocument = async () => {
+    try {
+            const res = await api.get(`/documents/${id}`);
+            setDoc(res.data);
+        } catch (err) {
+            console.error(err);
+            setError("Could not load document");
+        }
+    };
 
     useEffect(() => {
-        api.get(`/documents/${id}`)
-            .then((res) => setDoc(res.data))
-            .catch((err) => {
+        let cancelled = false;
+
+        (async () => {
+            try {
+                const res = await api.get(`/documents/${id}`);
+                if (!cancelled) setDoc(res.data);
+            } catch (err) {
                 console.error(err);
-                setError("Could not load document");
-            });
+                if (!cancelled) setError("Could not load document");
+            }
+        })();
+
+        return () => { cancelled = true; };
     }, [id]);
 
     const handleDelete = async () => {
@@ -37,19 +60,11 @@ export default function DocumentDetail() {
     };
 
     if (error) {
-        return (
-            <Container>
-                <Alert severity="error" sx={{ mt: 10 }}>{error}</Alert>
-            </Container>
-        );
+        return <Container><Alert severity="error" sx={{ mt: 10 }}>{error}</Alert></Container>;
     }
 
     if (!doc) {
-        return (
-            <Container>
-                <Typography mt={10}>Loading...</Typography>
-            </Container>
-        );
+        return <Container><Typography mt={10}>Loading...</Typography></Container>;
     }
 
     return (
@@ -61,13 +76,9 @@ export default function DocumentDetail() {
 
                 <Typography variant="h4">{doc.title}</Typography>
 
-                {doc.description && (
-                    <Typography mt={2}>{doc.description}</Typography>
-                )}
+                {doc.description && <Typography mt={2}>{doc.description}</Typography>}
 
-                <Typography mt={2} color="text.secondary">
-                    Type: {doc.fileType}
-                </Typography>
+                <Typography mt={2} color="text.secondary">Type: {doc.fileType}</Typography>
 
                 {doc.expiryDate ? (
                     <Typography mt={1} color="text.secondary">
@@ -75,18 +86,34 @@ export default function DocumentDetail() {
                     </Typography>
                 ) : (
                     <Typography mt={1} color="text.secondary" fontStyle="italic">
-                        Expiry date will be extracted by AI (coming soon)
+                        No expiry date set (AI will extract this later)
                     </Typography>
                 )}
 
-                <Box mt={3} display="flex" gap={2}>
+                <Box mt={3} display="flex" gap={2} flexWrap="wrap">
                     <Button
                         variant="contained"
                         startIcon={<OpenInNewIcon />}
                         href={doc.driveFileLink}
                         target="_blank"
                     >
-                        Open in Google Drive
+                        Open in Drive
+                    </Button>
+
+                    <Button
+                        variant="outlined"
+                        startIcon={<EditIcon />}
+                        onClick={() => setEditOpen(true)}
+                    >
+                        Edit
+                    </Button>
+
+                    <Button
+                        variant="outlined"
+                        startIcon={<DriveFileMoveIcon />}
+                        onClick={() => setMoveOpen(true)}
+                    >
+                        Move
                     </Button>
 
                     <Button
@@ -100,6 +127,20 @@ export default function DocumentDetail() {
                     </Button>
                 </Box>
             </Box>
+
+            <EditDocumentModal
+                open={editOpen}
+                onClose={() => setEditOpen(false)}
+                document={doc}
+                onUpdated={loadDocument}
+            />
+
+            <MoveDocumentModal
+                open={moveOpen}
+                onClose={() => setMoveOpen(false)}
+                document={doc}
+                onMoved={(newCategoryId) => navigate(`/categories/${newCategoryId}`)}
+            />
         </Container>
     );
 }
