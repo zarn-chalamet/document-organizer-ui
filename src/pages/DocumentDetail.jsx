@@ -1,12 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { Container, Typography, Button, Box } from "@mui/material";
+import { Container, Typography, Button, Box, IconButton, Alert } from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import DeleteIcon from "@mui/icons-material/Delete";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import api from "../api/axios";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 export default function DocumentDetail() {
     const { id } = useParams();
+    const navigate = useNavigate();
     const [doc, setDoc] = useState(null);
     const [error, setError] = useState(null);
+    const [deleting, setDeleting] = useState(false);
 
     useEffect(() => {
         api.get(`/documents/${id}`)
@@ -17,10 +22,24 @@ export default function DocumentDetail() {
             });
     }, [id]);
 
+    const handleDelete = async () => {
+        if (!window.confirm("Are you sure you want to delete this document?")) return;
+
+        setDeleting(true);
+        try {
+            await api.delete(`/documents/${id}`);
+            navigate(`/categories/${doc.categoryId}`);
+        } catch (err) {
+            console.error(err);
+            setError("Failed to delete document");
+            setDeleting(false);
+        }
+    };
+
     if (error) {
         return (
             <Container>
-                <Typography color="error" mt={10}>{error}</Typography>
+                <Alert severity="error" sx={{ mt: 10 }}>{error}</Alert>
             </Container>
         );
     }
@@ -36,25 +55,50 @@ export default function DocumentDetail() {
     return (
         <Container>
             <Box mt={10}>
+                <IconButton onClick={() => navigate(`/categories/${doc.categoryId}`)} sx={{ mb: 1 }}>
+                    <ArrowBackIcon />
+                </IconButton>
+
                 <Typography variant="h4">{doc.title}</Typography>
-                <Typography mt={2}>{doc.description}</Typography>
-                <Typography mt={1} color="text.secondary">
+
+                {doc.description && (
+                    <Typography mt={2}>{doc.description}</Typography>
+                )}
+
+                <Typography mt={2} color="text.secondary">
                     Type: {doc.fileType}
                 </Typography>
-                {doc.expiryDate && (
+
+                {doc.expiryDate ? (
                     <Typography mt={1} color="text.secondary">
                         Expires on: {doc.expiryDate}
                     </Typography>
+                ) : (
+                    <Typography mt={1} color="text.secondary" fontStyle="italic">
+                        Expiry date will be extracted by AI (coming soon)
+                    </Typography>
                 )}
 
-                <Button
-                    variant="contained"
-                    sx={{ mt: 3 }}
-                    href={doc.driveFileLink}
-                    target="_blank"
-                >
-                    Open in Google Drive
-                </Button>
+                <Box mt={3} display="flex" gap={2}>
+                    <Button
+                        variant="contained"
+                        startIcon={<OpenInNewIcon />}
+                        href={doc.driveFileLink}
+                        target="_blank"
+                    >
+                        Open in Google Drive
+                    </Button>
+
+                    <Button
+                        variant="outlined"
+                        color="error"
+                        startIcon={<DeleteIcon />}
+                        onClick={handleDelete}
+                        disabled={deleting}
+                    >
+                        {deleting ? "Deleting..." : "Delete"}
+                    </Button>
+                </Box>
             </Box>
         </Container>
     );

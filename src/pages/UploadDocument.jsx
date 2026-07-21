@@ -1,20 +1,22 @@
 import React, { useState } from "react";
-import { Button, TextField, Container, Box, Typography, Alert } from "@mui/material";
+import { Button, TextField, Container, Box, Typography, Alert, IconButton } from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import api from "../api/axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 export default function UploadDocument() {
+    const { id: categoryId } = useParams();
+    const navigate = useNavigate();
+
     const [file, setFile] = useState(null);
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
-    const [expiryDate, setExpiryDate] = useState("");
     const [uploading, setUploading] = useState(false);
     const [message, setMessage] = useState(null);
-    const navigate = useNavigate();
 
     const handleUpload = async () => {
-        if (!file || !title || !expiryDate) {
-            setMessage({ type: "error", text: "Please fill in all required fields" });
+        if (!file || !title) {
+            setMessage({ type: "error", text: "Please provide title and file" });
             return;
         }
 
@@ -22,17 +24,16 @@ export default function UploadDocument() {
         formData.append("file", file);
         formData.append("title", title);
         formData.append("description", description);
-        formData.append("expiryDate", expiryDate);
 
         setUploading(true);
         setMessage(null);
 
         try {
-            await api.post("/documents/upload", formData, {
+            await api.post(`/categories/${categoryId}/upload`, formData, {
                 headers: { "Content-Type": "multipart/form-data" }
             });
             setMessage({ type: "success", text: "Upload successful!" });
-            setTimeout(() => navigate("/documents"), 1000);
+            setTimeout(() => navigate(`/categories/${categoryId}`), 800);
         } catch (err) {
             console.error(err);
             setMessage({ type: "error", text: "Upload failed. Please try again." });
@@ -44,6 +45,10 @@ export default function UploadDocument() {
     return (
         <Container maxWidth="sm">
             <Box mt={10}>
+                <IconButton onClick={() => navigate(`/categories/${categoryId}`)} sx={{ mb: 1 }}>
+                    <ArrowBackIcon />
+                </IconButton>
+
                 <Typography variant="h4" gutterBottom>
                     Upload Document
                 </Typography>
@@ -70,16 +75,6 @@ export default function UploadDocument() {
                     rows={3}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                />
-
-                <TextField
-                    label="Expiry Date *"
-                    type="date"
-                    fullWidth
-                    margin="normal"
-                    InputLabelProps={{ shrink: true }}
-                    value={expiryDate}
-                    onChange={(e) => setExpiryDate(e.target.value)}
                 />
 
                 <Button

@@ -14,18 +14,9 @@ export default function Sidebar({ open, onClose }) {
         <Drawer open={open} onClose={onClose}>
             <List sx={{ width: 250 }}>
                 <ListItemButton onClick={() => handleNavigate("/")}>
-                    <ListItemText primary="Dashboard" />
+                    <ListItemText primary="My Categories" />
                 </ListItemButton>
-
                 <Divider />
-
-                <ListItemButton onClick={() => handleNavigate("/upload")}>
-                    <ListItemText primary="Upload Document" />
-                </ListItemButton>
-
-                <ListItemButton onClick={() => handleNavigate("/documents")}>
-                    <ListItemText primary="Documents" />
-                </ListItemButton>
             </List>
         </Drawer>
     );

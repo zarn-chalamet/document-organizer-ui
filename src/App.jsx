@@ -6,16 +6,13 @@ import Sidebar from "./components/Sidebar";
 import Login from "./pages/Login";
 import OAuthSuccess from "./pages/OAuthSuccess";
 import Dashboard from "./pages/Dashboard";
+import CategoryDetail from "./pages/CategoryDetail";
 import UploadDocument from "./pages/UploadDocument";
-import DocumentList from "./pages/DocumentList";
 import DocumentDetail from "./pages/DocumentDetail";
 
-// Route protection wrapper
 function ProtectedRoute({ children }) {
     const token = localStorage.getItem("accessToken");
-    if (!token) {
-        return <Navigate to="/login" replace />;
-    }
+    if (!token) return <Navigate to="/login" replace />;
     return children;
 }
 
@@ -34,11 +31,11 @@ function App() {
                 <Route path="/" element={
                     <ProtectedRoute><Dashboard /></ProtectedRoute>
                 } />
-                <Route path="/upload" element={
-                    <ProtectedRoute><UploadDocument /></ProtectedRoute>
+                <Route path="/categories/:id" element={
+                    <ProtectedRoute><CategoryDetail /></ProtectedRoute>
                 } />
-                <Route path="/documents" element={
-                    <ProtectedRoute><DocumentList /></ProtectedRoute>
+                <Route path="/categories/:id/upload" element={
+                    <ProtectedRoute><UploadDocument /></ProtectedRoute>
                 } />
                 <Route path="/documents/:id" element={
                     <ProtectedRoute><DocumentDetail /></ProtectedRoute>
