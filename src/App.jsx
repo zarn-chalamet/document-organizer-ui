@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import CategoryDetail from "./pages/CategoryDetail";
 import UploadDocument from "./pages/UploadDocument";
 import DocumentDetail from "./pages/DocumentDetail";
+import Chat from "./pages/Chat";
 
 function ProtectedRoute({ children }) {
     const token = localStorage.getItem("accessToken");
@@ -39,6 +40,9 @@ function App() {
                 } />
                 <Route path="/documents/:id" element={
                     <ProtectedRoute><DocumentDetail /></ProtectedRoute>
+                } />
+                <Route path="/chat" element={
+                    <ProtectedRoute><Chat /></ProtectedRoute>
                 } />
             </Routes>
         </BrowserRouter>
