@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Navbar from "./components/Navbar";
-import Sidebar from "./components/Sidebar";
+import Layout from "./components/Layout";
+import CommandPalette from "./components/CommandPalette";
 
 import Login from "./pages/Login";
 import OAuthSuccess from "./pages/OAuthSuccess";
@@ -18,33 +18,20 @@ function ProtectedRoute({ children }) {
 }
 
 function App() {
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-
     return (
         <BrowserRouter>
-            <Navbar onMenuClick={() => setSidebarOpen(true)} />
-            <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-
-            <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route path="/oauth-success" element={<OAuthSuccess />} />
-
-                <Route path="/" element={
-                    <ProtectedRoute><Dashboard /></ProtectedRoute>
-                } />
-                <Route path="/categories/:id" element={
-                    <ProtectedRoute><CategoryDetail /></ProtectedRoute>
-                } />
-                <Route path="/categories/:id/upload" element={
-                    <ProtectedRoute><UploadDocument /></ProtectedRoute>
-                } />
-                <Route path="/documents/:id" element={
-                    <ProtectedRoute><DocumentDetail /></ProtectedRoute>
-                } />
-                <Route path="/chat" element={
-                    <ProtectedRoute><Chat /></ProtectedRoute>
-                } />
-            </Routes>
+            <Layout>
+                <CommandPalette />
+                <Routes>
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/oauth-success" element={<OAuthSuccess />} />
+                    <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                    <Route path="/categories/:id" element={<ProtectedRoute><CategoryDetail /></ProtectedRoute>} />
+                    <Route path="/categories/:id/upload" element={<ProtectedRoute><UploadDocument /></ProtectedRoute>} />
+                    <Route path="/documents/:id" element={<ProtectedRoute><DocumentDetail /></ProtectedRoute>} />
+                    <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+                </Routes>
+            </Layout>
         </BrowserRouter>
     );
 }
