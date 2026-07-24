@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from "react";
 import {
     Dialog, DialogTitle, DialogContent, DialogActions,
-    TextField, Button, MenuItem, Alert
+    TextField, Button, MenuItem, Box, Typography, IconButton
 } from "@mui/material";
+import EditIcon from "@mui/icons-material/EditOutlined";
+import CloseIcon from "@mui/icons-material/Close";
+import { toast } from "sonner";
 import api from "../api/axios";
 
 const CATEGORY_TYPES = [
@@ -15,7 +18,6 @@ export default function EditCategoryModal({ open, onClose, category, onUpdated }
     const [type, setType] = useState("PASSPORT");
     const [customType, setCustomType] = useState("");
     const [saving, setSaving] = useState(false);
-    const [error, setError] = useState(null);
 
     useEffect(() => {
         if (category) {
@@ -25,76 +27,107 @@ export default function EditCategoryModal({ open, onClose, category, onUpdated }
         }
     }, [category]);
 
+    const handleClose = () => {
+        if (saving) return;
+        onClose();
+    };
+
     const handleUpdate = async () => {
-        if (!name.trim()) {
-            setError("Name is required");
-            return;
-        }
+        if (!name.trim()) { toast.error("Name is required"); return; }
         if (type === "CUSTOM" && !customType.trim()) {
-            setError("Custom type name is required");
-            return;
+            toast.error("Custom type name is required"); return;
         }
 
         setSaving(true);
-        setError(null);
-
         try {
             await api.put(`/categories/${category.id}`, {
                 name: name.trim(),
                 type,
-                customType: type === "CUSTOM" ? customType.trim() : null
+                customType: type === "CUSTOM" ? customType.trim() : null,
             });
+            toast.success("Category updated");
             onUpdated();
-            onClose();
+            handleClose();
         } catch (err) {
             console.error(err);
-            setError("Failed to update category");
+            toast.error("Failed to update category");
         } finally {
             setSaving(false);
         }
     };
 
     return (
-        <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-            <DialogTitle>Edit Category</DialogTitle>
-            <DialogContent>
-                {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        <Dialog
+            open={open}
+            onClose={handleClose}
+            fullWidth
+            maxWidth="sm"
+            slotProps={{ paper: { sx: { borderRadius: 3 } } }}
+        >
+            <DialogTitle sx={{ pt: 3, pb: 2, px: 3 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <Box
+                        sx={{
+                            width: 40, height: 40, borderRadius: 2,
+                            background: "linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(124, 58, 237, 0.15))",
+                            border: "1px solid rgba(139, 92, 246, 0.35)",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            flexShrink: 0,
+                        }}
+                    >
+                        <EditIcon sx={{ color: "#A78BFA", fontSize: 20 }} />
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
+                        <Typography variant="subtitle1" fontWeight={700} sx={{ lineHeight: 1.3 }}>
+                            Edit Category
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                            Update category details
+                        </Typography>
+                    </Box>
+                    <IconButton size="small" onClick={handleClose} disabled={saving}>
+                        <CloseIcon fontSize="small" />
+                    </IconButton>
+                </Box>
+            </DialogTitle>
 
-                <TextField
-                    label="Category Name *"
-                    fullWidth
-                    margin="normal"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                />
-
-                <TextField
-                    label="Type *"
-                    fullWidth
-                    select
-                    margin="normal"
-                    value={type}
-                    onChange={(e) => setType(e.target.value)}
-                >
-                    {CATEGORY_TYPES.map((t) => (
-                        <MenuItem key={t} value={t}>{t.replace("_", " ")}</MenuItem>
-                    ))}
-                </TextField>
-
-                {type === "CUSTOM" && (
+            <DialogContent sx={{ pt: "16px !important", pb: 2, px: 3 }}>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
                     <TextField
-                        label="Custom Type Name *"
-                        fullWidth
-                        margin="normal"
-                        value={customType}
-                        onChange={(e) => setCustomType(e.target.value)}
+                        label="Category Name" required fullWidth autoFocus
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
                     />
-                )}
+                    <TextField
+                        label="Type" select required fullWidth
+                        value={type}
+                        onChange={(e) => setType(e.target.value)}
+                    >
+                        {CATEGORY_TYPES.map((t) => (
+                            <MenuItem key={t} value={t}>{t.replace(/_/g, " ")}</MenuItem>
+                        ))}
+                    </TextField>
+                    {type === "CUSTOM" && (
+                        <TextField
+                            label="Custom Type Name" required fullWidth
+                            value={customType}
+                            onChange={(e) => setCustomType(e.target.value)}
+                        />
+                    )}
+                </Box>
             </DialogContent>
-            <DialogActions>
-                <Button onClick={onClose}>Cancel</Button>
-                <Button onClick={handleUpdate} variant="contained" disabled={saving}>
-                    {saving ? "Saving..." : "Save"}
+
+            <DialogActions sx={{ pt: 2, pb: 3, px: 3, gap: 1 }}>
+                <Button onClick={handleClose} disabled={saving} color="inherit">
+                    Cancel
+                </Button>
+                <Button
+                    onClick={handleUpdate}
+                    variant="contained"
+                    disabled={saving || !name.trim()}
+                    sx={{ boxShadow: "0 4px 14px -4px rgba(139, 92, 246, 0.5)" }}
+                >
+                    {saving ? "Saving..." : "Save Changes"}
                 </Button>
             </DialogActions>
         </Dialog>

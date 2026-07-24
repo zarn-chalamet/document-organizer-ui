@@ -1,61 +1,58 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
-    Box,
-    Typography,
-    TextField,
-    IconButton,
-    Paper,
-    CircularProgress,
-    Alert,
+    Box, Typography, TextField, IconButton, Paper, CircularProgress, Container
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
-import SmartToyIcon from "@mui/icons-material/SmartToy";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import { toast } from "sonner";
 import ChatMessage from "../components/ChatMessage";
 import api from "../api/axios";
 
-const WELCOME_MESSAGE = {
+const WELCOME = {
     role: "assistant",
-    content:
-        "Hi! I'm your document assistant. Ask me anything about your documents — expiry dates, document types, or specific details.\n\nExample questions:\n• When does my passport expire?\n• What visas do I have?\n• Show me my work permit details.",
+    content: "Hi! I'm your document assistant. Ask me anything about your documents.",
 };
 
+const SUGGESTED_PROMPTS = [
+    { icon: "📅", text: "When does my passport expire?" },
+    { icon: "🌏", text: "What visas do I have?" },
+    { icon: "⚠️", text: "Show me expiring documents" },
+    { icon: "📄", text: "Summarize my documents" },
+];
+
 export default function Chat() {
-    const [messages, setMessages] = useState([WELCOME_MESSAGE]);
+    const [messages, setMessages] = useState([WELCOME]);
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
     const bottomRef = useRef(null);
+    const inputRef = useRef(null);
 
-    // Auto scroll to bottom on new message
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
-    const sendMessage = async () => {
-        const question = input.trim();
+    const sendMessage = async (text) => {
+        const question = (text || input).trim();
         if (!question || loading) return;
 
-        // Add user message
         setMessages((prev) => [...prev, { role: "user", content: question }]);
         setInput("");
         setLoading(true);
-        setError(null);
 
         try {
-            const response = await api.post("/chat", { question });
-            const answer = response.data.answer;
-
+            const res = await api.post("/chat", { question });
             setMessages((prev) => [
                 ...prev,
-                { role: "assistant", content: answer },
+                { role: "assistant", content: res.data.answer },
             ]);
         } catch (err) {
-            console.error("Chat error:", err);
-            setError("Failed to get a response. Make sure the AI service is running.");
-            // Remove the user message if request failed
+            console.error(err);
+            toast.error("Failed to get response");
             setMessages((prev) => prev.slice(0, -1));
         } finally {
             setLoading(false);
+            inputRef.current?.focus();
         }
     };
 
@@ -66,123 +63,212 @@ export default function Chat() {
         }
     };
 
+    const clearChat = () => {
+        setMessages([WELCOME]);
+        toast.success("Chat cleared");
+    };
+
+    const showSuggestions = messages.length === 1;
+
     return (
-        <Box
-            sx={{
-                display: "flex",
-                flexDirection: "column",
-                height: "calc(100vh - 64px)", // subtract navbar height
-                maxWidth: 800,
-                mx: "auto",
-                px: 2,
-            }}
-        >
-            {/* Header */}
-            <Box sx={{ py: 2, borderBottom: 1, borderColor: "divider" }}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <SmartToyIcon color="primary" />
-                    <Typography variant="h6" fontWeight={600}>
-                        Document Assistant
-                    </Typography>
-                </Box>
-                <Typography variant="caption" color="text.secondary">
-                    Ask questions about your documents. Powered by local semantic
-                    search + Groq AI.
-                </Typography>
-            </Box>
-
-            {/* Messages area */}
-            <Box
-                sx={{
-                    flex: 1,
-                    overflowY: "auto",
-                    py: 2,
-                    display: "flex",
-                    flexDirection: "column",
-                }}
-            >
-                {messages.map((msg, index) => (
-                    <ChatMessage key={index} message={msg} />
-                ))}
-
-                {/* Loading indicator */}
-                {loading && (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+        <Box sx={{ width: "100%", maxWidth: 900, mx: "auto", height: "100vh", px: { xs: 2, sm: 3 }, py: 3, boxSizing: "border-box" }}>
+            <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
+                {/* Header */}
+                <Box
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        pb: 2,
+                        borderBottom: "1px solid",
+                        borderColor: "divider",
+                        mb: 3,
+                    }}
+                >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                         <Box
                             sx={{
-                                width: 32,
-                                height: 32,
-                                borderRadius: "50%",
-                                bgcolor: "primary.main",
+                                width: 40,
+                                height: 40,
+                                borderRadius: 2,
+                                background: "linear-gradient(135deg, #8B5CF6, #EC4899)",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
+                                boxShadow: "0 0 20px rgba(139, 92, 246, 0.4)",
                             }}
                         >
-                            <SmartToyIcon sx={{ fontSize: 18, color: "white" }} />
+                            <AutoAwesomeIcon sx={{ color: "white", fontSize: 20 }} />
                         </Box>
-                        <Paper
-                            elevation={0}
-                            sx={{
-                                px: 2,
-                                py: 1.5,
-                                bgcolor: "grey.100",
-                                borderRadius: "18px 18px 18px 4px",
-                            }}
-                        >
-                            <CircularProgress size={16} />
-                        </Paper>
+                        <Box>
+                            <Typography variant="h6" fontWeight={700}>
+                                AI Assistant
+                            </Typography>
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    color: "text.secondary",
+                                    fontFamily: "'JetBrains Mono', monospace",
+                                    fontSize: "0.6875rem",
+                                }}
+                            >
+                                POWERED BY GROQ · YOUR DATA STAYS PRIVATE
+                            </Typography>
+                        </Box>
                     </Box>
-                )}
+                    {messages.length > 1 && (
+                        <IconButton onClick={clearChat} size="small" title="Clear chat">
+                            <RestartAltIcon fontSize="small" />
+                        </IconButton>
+                    )}
+                </Box>
 
-                {/* Error */}
-                {error && (
-                    <Alert severity="error" sx={{ mb: 2 }}>
-                        {error}
-                    </Alert>
-                )}
+                {/* Messages */}
+                <Box sx={{ flex: 1, overflowY: "auto", pr: 1 }}>
+                    {messages.map((msg, i) => (
+                        <ChatMessage key={i} message={msg} />
+                    ))}
 
-                <div ref={bottomRef} />
-            </Box>
+                    {loading && (
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
+                            <Box
+                                sx={{
+                                    width: 32,
+                                    height: 32,
+                                    borderRadius: "50%",
+                                    background: "linear-gradient(135deg, #8B5CF6, #EC4899)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    flexShrink: 0,
+                                    boxShadow: "0 0 15px rgba(139, 92, 246, 0.4)",
+                                }}
+                            >
+                                <AutoAwesomeIcon sx={{ fontSize: 16, color: "white" }} />
+                            </Box>
+                            <Paper
+                                elevation={0}
+                                sx={{
+                                    px: 2,
+                                    py: 1.5,
+                                    bgcolor: "background.paper",
+                                    border: "1px solid",
+                                    borderColor: "divider",
+                                    borderRadius: "16px 16px 16px 4px",
+                                }}
+                            >
+                                <CircularProgress size={14} sx={{ color: "primary.main" }} />
+                            </Paper>
+                        </Box>
+                    )}
 
-            {/* Input area */}
-            <Paper
-                elevation={2}
-                sx={{
-                    p: 1.5,
-                    mb: 2,
-                    borderRadius: 3,
-                    display: "flex",
-                    alignItems: "flex-end",
-                    gap: 1,
-                }}
-            >
-                <TextField
-                    fullWidth
-                    multiline
-                    maxRows={4}
-                    placeholder="Ask about your documents..."
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    variant="standard"
-                    InputProps={{ disableUnderline: true }}
-                    sx={{ px: 1 }}
-                />
-                <IconButton
-                    color="primary"
-                    onClick={sendMessage}
-                    disabled={!input.trim() || loading}
+                    {showSuggestions && !loading && (
+                        <Box sx={{ mt: 3 }}>
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    display: "block",
+                                    mb: 1.5,
+                                    ml: 0.5,
+                                    fontFamily: "'JetBrains Mono', monospace",
+                                    fontSize: "0.6875rem",
+                                    fontWeight: 600,
+                                    letterSpacing: "0.1em",
+                                    color: "primary.main",
+                                }}
+                            >
+                                SUGGESTED QUESTIONS
+                            </Typography>
+                            <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5 }}>
+                                {SUGGESTED_PROMPTS.map((prompt, i) => (
+                                    <Paper
+                                        key={i}
+                                        onClick={() => sendMessage(prompt.text)}
+                                        sx={{
+                                            p: 2,
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 1.5,
+                                            border: "1px solid",
+                                            borderColor: "divider",
+                                            borderRadius: 2,
+                                            cursor: "pointer",
+                                            transition: "all 0.15s",
+                                            "&:hover": {
+                                                borderColor: "primary.main",
+                                                transform: "translateY(-1px)",
+                                                boxShadow: "0 0 20px rgba(139, 92, 246, 0.15)",
+                                            },
+                                        }}
+                                    >
+                                        <Typography sx={{ fontSize: "1.125rem" }}>{prompt.icon}</Typography>
+                                        <Typography variant="body2" fontWeight={500}>
+                                            {prompt.text}
+                                        </Typography>
+                                    </Paper>
+                                ))}
+                            </Box>
+                        </Box>
+                    )}
+
+                    <div ref={bottomRef} />
+                </Box>
+
+                {/* Input */}
+                <Paper
+                    elevation={0}
                     sx={{
-                        bgcolor: "primary.main",
-                        color: "white",
-                        "&:hover": { bgcolor: "primary.dark" },
-                        "&:disabled": { bgcolor: "grey.300", color: "grey.500" },
+                        mt: 2,
+                        p: 1,
+                        border: "1px solid",
+                        borderColor: "divider",
+                        borderRadius: 3,
+                        display: "flex",
+                        alignItems: "flex-end",
+                        gap: 1,
+                        transition: "all 0.15s",
+                        "&:focus-within": {
+                            borderColor: "primary.main",
+                            boxShadow: "0 0 20px rgba(139, 92, 246, 0.15)",
+                        },
                     }}
                 >
-                    <SendIcon fontSize="small" />
-                </IconButton>
-            </Paper>
+                    <TextField
+                        inputRef={inputRef}
+                        fullWidth
+                        multiline
+                        maxRows={4}
+                        placeholder="Ask about your documents..."
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        variant="standard"
+                        InputProps={{ disableUnderline: true }}
+                        sx={{ px: 1.5, py: 0.5, "& textarea": { fontSize: "0.9375rem" } }}
+                    />
+                    <IconButton
+                        onClick={() => sendMessage()}
+                        disabled={!input.trim() || loading}
+                        sx={{
+                            background: input.trim() ? "linear-gradient(135deg, #8B5CF6, #7C3AED)" : "transparent",
+                            color: "white",
+                            width: 36,
+                            height: 36,
+                            transition: "all 0.15s",
+                            "&:hover": {
+                                background: "linear-gradient(135deg, #7C3AED, #6D28D9)",
+                                boxShadow: "0 0 15px rgba(139, 92, 246, 0.4)",
+                            },
+                            "&:disabled": {
+                                background: "transparent",
+                                color: "text.disabled",
+                            },
+                        }}
+                    >
+                        <SendIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                </Paper>
+            </Box>
         </Box>
     );
 }
