@@ -5,19 +5,19 @@ import {
 } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
 import DashboardIcon from "@mui/icons-material/SpaceDashboard";
-import ChatIcon from "@mui/icons-material/AutoAwesome";
 import LogoutIcon from "@mui/icons-material/Logout";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import KeyboardIcon from "@mui/icons-material/KeyboardCommandKey";
 import { useThemeMode } from "../theme/useThemeMode";
 import ThemeToggle from "./ThemeToggle";
+import Logo from "./Logo";
 
 const NAV_SECTIONS = [
     {
         heading: "MAIN",
         items: [
-            { label: "Dashboard", path: "/", icon: <DashboardIcon /> }
+            { label: "Dashboard", path: "/", icon: <DashboardIcon /> },
         ],
     },
 ];
@@ -58,7 +58,7 @@ export default function Sidebar({ collapsed, onToggle, width }) {
                 zIndex: 1200,
             }}
         >
-            {/* Logo */}
+            {/* ============ LOGO SECTION ============ */}
             <Box
                 sx={{
                     display: "flex",
@@ -71,39 +71,18 @@ export default function Sidebar({ collapsed, onToggle, width }) {
                     borderColor: "divider",
                 }}
             >
-                {!collapsed && (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                        <Box
-                            sx={{
-                                width: 32,
-                                height: 32,
-                                borderRadius: 2,
-                                background: "linear-gradient(135deg, #8B5CF6, #7C3AED)",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                boxShadow: "0 0 20px rgba(139, 92, 246, 0.4)",
-                            }}
-                        >
-                            <Typography
-                                sx={{
-                                    color: "white",
-                                    fontSize: "0.875rem",
-                                    fontWeight: 700,
-                                    fontFamily: "'JetBrains Mono', monospace",
-                                }}
-                            >
-                                D
-                            </Typography>
-                        </Box>
-                        <Typography variant="subtitle1" fontWeight={600} sx={{ fontSize: "0.9375rem" }}>
-                            Organizer
-                        </Typography>
-                    </Box>
+                {!collapsed ? (
+                    <>
+                        <Logo variant="full" size={32} glow />
+                        <IconButton onClick={onToggle} size="small">
+                            <ChevronLeftIcon fontSize="small" />
+                        </IconButton>
+                    </>
+                ) : (
+                    <IconButton onClick={onToggle} size="small">
+                        <ChevronRightIcon fontSize="small" />
+                    </IconButton>
                 )}
-                <IconButton onClick={onToggle} size="small">
-                    {collapsed ? <ChevronRightIcon fontSize="small" /> : <ChevronLeftIcon fontSize="small" />}
-                </IconButton>
             </Box>
 
             {/* Command palette trigger */}
