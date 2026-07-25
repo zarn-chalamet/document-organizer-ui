@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Typography, Paper } from "@mui/material";
-import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import SmartToyIcon from "@mui/icons-material/SmartToy";
 import PersonIcon from "@mui/icons-material/Person";
 
 export default function ChatMessage({ message }) {
@@ -30,7 +30,7 @@ export default function ChatMessage({ message }) {
                         boxShadow: "0 0 15px rgba(139, 92, 246, 0.3)",
                     }}
                 >
-                    <AutoAwesomeIcon sx={{ fontSize: 16, color: "white" }} />
+                    <SmartToyIcon sx={{ fontSize: 16, color: "white" }} />
                 </Box>
             )}
 

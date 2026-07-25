@@ -9,7 +9,6 @@ import Dashboard from "./pages/Dashboard";
 import CategoryDetail from "./pages/CategoryDetail";
 import UploadDocument from "./pages/UploadDocument";
 import DocumentDetail from "./pages/DocumentDetail";
-import Chat from "./pages/Chat";
 
 function ProtectedRoute({ children }) {
     const token = localStorage.getItem("accessToken");
@@ -29,7 +28,6 @@ function App() {
                     <Route path="/categories/:id" element={<ProtectedRoute><CategoryDetail /></ProtectedRoute>} />
                     <Route path="/categories/:id/upload" element={<ProtectedRoute><UploadDocument /></ProtectedRoute>} />
                     <Route path="/documents/:id" element={<ProtectedRoute><DocumentDetail /></ProtectedRoute>} />
-                    <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
                 </Routes>
             </Layout>
         </BrowserRouter>

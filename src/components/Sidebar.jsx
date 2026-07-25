@@ -17,8 +17,7 @@ const NAV_SECTIONS = [
     {
         heading: "MAIN",
         items: [
-            { label: "Dashboard", path: "/", icon: <DashboardIcon /> },
-            { label: "AI Assistant", path: "/chat", icon: <ChatIcon /> },
+            { label: "Dashboard", path: "/", icon: <DashboardIcon /> }
         ],
     },
 ];

@@ -21,6 +21,7 @@ export default function PageHeader({
     backTo,
     breadcrumbs = [],
     action,
+    titleAdornment,
 }) {
     const navigate = useNavigate();
 
@@ -122,23 +123,26 @@ export default function PageHeader({
                         </IconButton>
                     )}
                     <Box sx={{ minWidth: 0, flex: 1 }}>
-                        <Typography
-                            variant="h4"
-                            fontWeight={700}
-                            letterSpacing="-0.02em"
-                            sx={{
-                                mb: subtitle ? 0.5 : 0,
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                            }}
-                        >
-                            {title}
-                        </Typography>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
+                            <Typography
+                                variant="h4"
+                                fontWeight={700}
+                                letterSpacing="-0.02em"
+                                sx={{
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                }}
+                            >
+                                {title}
+                            </Typography>
+                            {titleAdornment}
+                        </Box>
                         {subtitle && (
                             <Typography
                                 variant="body2"
                                 color="text.secondary"
                                 sx={{
+                                    mt: 0.5,
                                     overflow: "hidden",
                                     textOverflow: "ellipsis",
                                     whiteSpace: "nowrap",

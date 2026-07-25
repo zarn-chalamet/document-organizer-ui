@@ -169,19 +169,23 @@ export default function DocumentDetail() {
                     },
                     { label: doc.title },
                 ]}
+                // Status badge inline with title (below breadcrumb, next to title)
+                titleAdornment={doc.scanStatus && <StatusBadge status={doc.scanStatus} />}
+                // Only the primary action in the top-right corner
                 action={
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                        {doc.scanStatus && <StatusBadge status={doc.scanStatus} />}
-                        <Button
-                            variant="contained"
-                            startIcon={<OpenInNewIcon />}
-                            href={doc.driveFileLink}
-                            target="_blank"
-                            sx={{ boxShadow: "0 4px 14px -4px rgba(139, 92, 246, 0.5)" }}
-                        >
-                            Open in Drive
-                        </Button>
-                    </Box>
+                    <Button
+                        variant="contained"
+                        startIcon={<OpenInNewIcon />}
+                        href={doc.driveFileLink}
+                        target="_blank"
+                        size="large"
+                        sx={{
+                            boxShadow: "0 4px 14px -4px rgba(139, 92, 246, 0.5)",
+                            px: 2.5,
+                        }}
+                    >
+                        Open in Drive
+                    </Button>
                 }
             />
 

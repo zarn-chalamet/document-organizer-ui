@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Box } from "@mui/material";
 import { useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
+import ChatWidget from "./ChatWidget";
 
 const SIDEBAR_OPEN = 260;
 const SIDEBAR_COLLAPSED = 72;
@@ -37,6 +38,8 @@ export default function Layout({ children }) {
             >
                 {children}
             </Box>
+            {/* Floating chat widget */}
+            <ChatWidget />
         </>
     );
 }
