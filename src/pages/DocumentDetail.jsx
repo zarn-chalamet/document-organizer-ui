@@ -14,6 +14,7 @@ import FingerprintIcon from "@mui/icons-material/Fingerprint";
 import DashboardIcon from "@mui/icons-material/SpaceDashboard";
 import FolderIcon from "@mui/icons-material/Folder";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import DownloadIcon from "@mui/icons-material/FileDownloadOutlined";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import api from "../api/axios";
@@ -178,21 +179,6 @@ export default function DocumentDetail() {
                     { label: doc.title },
                 ]}
                 titleAdornment={doc.scanStatus && <StatusBadge status={doc.scanStatus} />}
-                action={
-                    <Button
-                        variant="contained"
-                        startIcon={<OpenInNewIcon />}
-                        href={doc.driveFileLink}
-                        target="_blank"
-                        size="large"
-                        sx={{
-                            boxShadow: "0 4px 14px -4px rgba(139, 92, 246, 0.5)",
-                            px: 2.5,
-                        }}
-                    >
-                        Open in Drive
-                    </Button>
-                }
             />
 
             {/* AI Verification Banner */}
@@ -327,6 +313,34 @@ export default function DocumentDetail() {
                         </Typography>
 
                         <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
+                            
+                            {/* File actions */}
+                            <Button
+                                variant="contained"
+                                startIcon={<OpenInNewIcon />}
+                                component="a"
+                                href={doc.driveFileLink}
+                                target="_blank"
+                                fullWidth
+                                sx={{ boxShadow: "0 4px 14px -4px rgba(139, 92, 246, 0.5)" }}
+                            >
+                                Open in Drive
+                            </Button>
+
+                            <Button
+                                variant="outlined"
+                                startIcon={<DownloadIcon />}
+                                component="a"
+                                href={`https://drive.google.com/uc?export=download&id=${doc.driveFileId}`}
+                                target="_blank"
+                                fullWidth
+                            >
+                                Download
+                            </Button>
+
+                            <Divider sx={{ my: 1 }} />
+
+                            {/* Document actions */}
                             <Button
                                 variant="outlined"
                                 startIcon={<EditIcon />}
@@ -345,8 +359,9 @@ export default function DocumentDetail() {
                                 Move to Category
                             </Button>
 
-                            <Divider sx={{ my: 1.25 }} />
+                            <Divider sx={{ my: 1 }} />
 
+                            {/* Danger zone */}
                             <Button
                                 variant="outlined"
                                 startIcon={<DeleteOutlineIcon />}
