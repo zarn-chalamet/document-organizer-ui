@@ -4,6 +4,7 @@ import {
     Button, Box, TextField, ToggleButton, ToggleButtonGroup,
     InputAdornment, Skeleton, Chip
 } from "@mui/material";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import AddIcon from "@mui/icons-material/Add";
 import DescriptionIcon from "@mui/icons-material/Description";
 import SearchIcon from "@mui/icons-material/Search";
@@ -279,7 +280,15 @@ export default function CategoryDetail() {
                                                     })}
                                                 </Typography>
                                             </Box>
-                                            {getExpiryChip(doc.expiryDate)}
+                                            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                                                {getExpiryChip(doc.expiryDate)}
+                                                {doc.userVerifiedExpiry && (
+                                                    <CheckCircleOutlineIcon
+                                                        sx={{ fontSize: 14, color: "#10B981" }}
+                                                        titleAccess="Verified by you"
+                                                    />
+                                                )}
+                                            </Box>
                                         </Box>
                                     ) : (
                                         <Box sx={{ pt: 1.5, borderTop: "1px solid", borderColor: "divider" }}>

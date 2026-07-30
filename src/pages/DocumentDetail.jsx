@@ -13,11 +13,13 @@ import CategoryIcon from "@mui/icons-material/Category";
 import FingerprintIcon from "@mui/icons-material/Fingerprint";
 import DashboardIcon from "@mui/icons-material/SpaceDashboard";
 import FolderIcon from "@mui/icons-material/Folder";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import api from "../api/axios";
 import PageHeader from "../components/PageHeader";
 import StatusBadge from "../components/StatusBadge";
+import AiVerificationBanner from "../components/AiVerificationBanner";
 import EditDocumentModal from "../components/EditDocumentModal";
 import MoveDocumentModal from "../components/MoveDocumentModal";
 import DeleteDocumentModal from "../components/DeleteDocumentModal";
@@ -70,7 +72,6 @@ export default function DocumentDetail() {
         return { text: "Valid", color: "#10B981" };
     };
 
-    // SAME container padding as CategoryDetail & Dashboard
     const PageContainer = ({ children }) => (
         <Box sx={{
             width: "100%",
@@ -109,6 +110,13 @@ export default function DocumentDetail() {
     }
 
     const expiryInfo = getExpiryInfo(doc.expiryDate);
+
+    // Determine if AI verification banner should show
+    const showVerificationBanner =
+        doc.extractedExpiryDate &&
+        doc.expiryDate &&
+        !doc.userVerifiedExpiry &&
+        doc.scanStatus === "DONE";
 
     const MetadataRow = ({ icon, label, value, mono }) => (
         <Box sx={{
@@ -169,9 +177,7 @@ export default function DocumentDetail() {
                     },
                     { label: doc.title },
                 ]}
-                // Status badge inline with title (below breadcrumb, next to title)
                 titleAdornment={doc.scanStatus && <StatusBadge status={doc.scanStatus} />}
-                // Only the primary action in the top-right corner
                 action={
                     <Button
                         variant="contained"
@@ -188,6 +194,15 @@ export default function DocumentDetail() {
                     </Button>
                 }
             />
+
+            {/* AI Verification Banner */}
+            {showVerificationBanner && (
+                <AiVerificationBanner
+                    document={doc}
+                    onVerified={loadDocument}
+                    onEdit={() => setEditOpen(true)}
+                />
+            )}
 
             <Box sx={{
                 display: "grid",
@@ -243,9 +258,38 @@ export default function DocumentDetail() {
                                                 }}
                                             />
                                         )}
+                                        {doc.userVerifiedExpiry && (
+                                            <Chip
+                                                icon={<CheckCircleOutlineIcon sx={{ fontSize: "14px !important" }} />}
+                                                label="Verified"
+                                                size="small"
+                                                sx={{
+                                                    bgcolor: "rgba(16, 185, 129, 0.15)",
+                                                    color: "#10B981",
+                                                    border: "1px solid rgba(16, 185, 129, 0.35)",
+                                                    fontWeight: 600,
+                                                    fontSize: "0.6875rem",
+                                                    height: 22,
+                                                    fontFamily: "'JetBrains Mono', monospace",
+                                                    "& .MuiChip-icon": { color: "#10B981", ml: 0.5 },
+                                                }}
+                                            />
+                                        )}
                                     </Box>
+                                ) : doc.scanStatus === "DONE" ? (
+                                    <Typography
+                                        variant="body2"
+                                        sx={{ color: "#F59E0B", fontStyle: "italic", fontSize: "0.875rem" }}
+                                    >
+                                        AI couldn't detect date — please set manually
+                                    </Typography>
                                 ) : (
-                                    <Typography variant="body2" color="text.disabled" fontStyle="italic" sx={{ fontSize: "0.875rem" }}>
+                                    <Typography
+                                        variant="body2"
+                                        color="text.disabled"
+                                        fontStyle="italic"
+                                        sx={{ fontSize: "0.875rem" }}
+                                    >
                                         Not set — AI will extract this
                                     </Typography>
                                 )

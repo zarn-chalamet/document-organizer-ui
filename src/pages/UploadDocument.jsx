@@ -173,7 +173,7 @@ export default function UploadDocument() {
                             color="text.secondary"
                             sx={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.75rem" }}
                         >
-                            PDF · JPG · PNG · Max 10 MB per file
+                            PDF · JPG · PNG · Max 25 MB per file
                         </Typography>
 
                         <input
