@@ -18,7 +18,7 @@ const NAV_SECTIONS = [
     {
         heading: "MAIN",
         items: [
-            { label: "Dashboard", path: "/", icon: <DashboardIcon /> },
+            { label: "Dashboard", path: "/app", icon: <DashboardIcon /> },
         ],
     },
 ];
@@ -43,8 +43,7 @@ export default function Sidebar({
         navigate("/login");
     };
 
-    const isActive = (path) =>
-        path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
+    const isActive = (path) => (path === "/app" ? location.pathname === "/app" : location.pathname.startsWith(path));
 
     const openPalette = () => {
         document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }));
@@ -89,7 +88,7 @@ export default function Sidebar({
                 {!effectiveCollapsed ? (
                     <>
                         <Box
-                            onClick={() => handleNavClick("/")}
+                            onClick={() => handleNavClick("/app")}
                             sx={{
                                 cursor: "pointer",
                                 display: "flex",

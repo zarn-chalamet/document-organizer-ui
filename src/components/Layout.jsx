@@ -30,7 +30,10 @@ export default function Layout({ children }) {
         setMobileOpen(false);
     }, [location.pathname]);
 
-    const hideSidebar = location.pathname === "/login" || location.pathname === "/oauth-success";
+    const hideSidebar =
+        location.pathname === "/" ||
+        location.pathname === "/login" ||
+        location.pathname === "/oauth-success";
     if (hideSidebar) return <>{children}</>;
 
     const desktopWidth = collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_OPEN;
@@ -67,7 +70,7 @@ export default function Layout({ children }) {
                             <MenuIcon fontSize="small" />
                         </IconButton>
                         <Box
-                            onClick={() => navigate("/")}
+                            onClick={() => navigate("/app")}
                             sx={{
                                 cursor: "pointer",
                                 display: "flex",

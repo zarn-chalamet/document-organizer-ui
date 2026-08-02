@@ -32,7 +32,7 @@ export default function OAuthSuccess() {
         if (token) {
             localStorage.setItem("accessToken", token);
             localStorage.setItem("email", email);
-            navigate("/", { replace: true });
+            navigate("/app", { replace: true });
         } else if (window.location.pathname === "/oauth-success") {
             navigate("/login", { replace: true });
         }
