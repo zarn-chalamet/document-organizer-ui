@@ -95,9 +95,9 @@ export default function PageHeader({
             <Box sx={{
                 display: "flex",
                 justifyContent: "space-between",
-                alignItems: "flex-start",
+                alignItems: { xs: "stretch", sm: "flex-start" },
                 gap: 2,
-                flexWrap: "wrap",
+                flexDirection: { xs: "column", sm: "row" },
             }}>
                 {/* Left: back button + title */}
                 <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5, minWidth: 0, flex: 1 }}>
@@ -156,7 +156,13 @@ export default function PageHeader({
 
                 {/* Right: action button */}
                 {action && (
-                    <Box sx={{ flexShrink: 0 }}>
+                    <Box sx={{
+                        flexShrink: 0,
+                        width: { xs: "100%", sm: "auto" },
+                        "& > *": {
+                            width: { xs: "100%", sm: "auto" },
+                        },
+                    }}>
                         {action}
                     </Box>
                 )}

@@ -27,7 +27,7 @@ const SUGGESTED_PROMPTS = [
 // Routes where the chat widget should NOT appear
 const HIDDEN_ROUTES = ["/login", "/oauth-success"];
 
-export default function ChatWidget() {
+export default function ChatWidget({ isMobile = false, topbarHeight = 60 }) {
     const location = useLocation();
     const [open, setOpen] = useState(false);
     const [messages, setMessages] = useState([WELCOME]);
@@ -119,8 +119,8 @@ export default function ChatWidget() {
                         invisible={!hasUnread}
                         sx={{
                             position: "fixed",
-                            bottom: 24,
-                            right: 24,
+                            bottom: { xs: 16, sm: 24 },
+                            right: { xs: 16, sm: 24 },
                             zIndex: 1250,
                             "& .MuiBadge-badge": {
                                 top: 8,

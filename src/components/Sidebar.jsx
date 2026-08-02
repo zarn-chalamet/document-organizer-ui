@@ -1,7 +1,7 @@
 import React from "react";
 import {
     Box, Typography, ListItemButton, ListItemIcon, ListItemText,
-    IconButton, Tooltip, Avatar, Divider
+    IconButton, Tooltip, Avatar, Divider, Drawer
 } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
 import DashboardIcon from "@mui/icons-material/SpaceDashboard";
@@ -9,6 +9,7 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import KeyboardIcon from "@mui/icons-material/KeyboardCommandKey";
+import CloseIcon from "@mui/icons-material/Close";
 import { useThemeMode } from "../theme/useThemeMode";
 import ThemeToggle from "./ThemeToggle";
 import Logo from "./Logo";
@@ -22,7 +23,14 @@ const NAV_SECTIONS = [
     },
 ];
 
-export default function Sidebar({ collapsed, onToggle, width }) {
+export default function Sidebar({
+    collapsed,
+    onToggle,
+    width,
+    isMobile = false,
+    mobileOpen = false,
+    onMobileClose = () => {},
+}) {
     const navigate = useNavigate();
     const location = useLocation();
     const email = localStorage.getItem("email");
@@ -35,48 +43,72 @@ export default function Sidebar({ collapsed, onToggle, width }) {
         navigate("/login");
     };
 
-    const isActive = (path) => (path === "/" ? location.pathname === "/" : location.pathname.startsWith(path));
+    const isActive = (path) =>
+        path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
 
     const openPalette = () => {
         document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }));
+        if (isMobile) onMobileClose();
     };
 
-    return (
+    const handleNavClick = (path) => {
+        navigate(path);
+        if (isMobile) onMobileClose();
+    };
+
+    // On mobile, sidebar always renders as "open" (not collapsed)
+    const effectiveCollapsed = isMobile ? false : collapsed;
+
+    // ============ SIDEBAR CONTENT (shared by desktop + mobile) ============
+    const sidebarContent = (
         <Box
             sx={{
-                width,
-                position: "fixed",
-                top: 0,
-                left: 0,
-                height: "100vh",
+                width: isMobile ? 280 : width,
+                height: "100%",
                 bgcolor: "background.paper",
-                borderRight: "1px solid",
-                borderColor: "divider",
                 display: "flex",
                 flexDirection: "column",
+                borderRight: isMobile ? "none" : "1px solid",
+                borderColor: "divider",
                 transition: "width 0.2s ease",
-                zIndex: 1200,
             }}
         >
-            {/* ============ LOGO SECTION ============ */}
+            {/* ============ LOGO / HEADER ============ */}
             <Box
                 sx={{
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: collapsed ? "center" : "space-between",
-                    px: collapsed ? 0 : 2.5,
+                    justifyContent: effectiveCollapsed ? "center" : "space-between",
+                    px: effectiveCollapsed ? 0 : 2.5,
                     py: 2.5,
                     minHeight: 68,
                     borderBottom: "1px solid",
                     borderColor: "divider",
                 }}
             >
-                {!collapsed ? (
+                {!effectiveCollapsed ? (
                     <>
-                        <Logo variant="full" size={32} glow />
-                        <IconButton onClick={onToggle} size="small">
-                            <ChevronLeftIcon fontSize="small" />
-                        </IconButton>
+                        <Box
+                            onClick={() => handleNavClick("/")}
+                            sx={{
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                transition: "opacity 0.15s",
+                                "&:hover": { opacity: 0.8 },
+                            }}
+                        >
+                            <Logo variant="full" size={32} glow />
+                        </Box>
+                        {isMobile ? (
+                            <IconButton onClick={onMobileClose} size="small">
+                                <CloseIcon fontSize="small" />
+                            </IconButton>
+                        ) : (
+                            <IconButton onClick={onToggle} size="small">
+                                <ChevronLeftIcon fontSize="small" />
+                            </IconButton>
+                        )}
                     </>
                 ) : (
                     <IconButton onClick={onToggle} size="small">
@@ -85,8 +117,8 @@ export default function Sidebar({ collapsed, onToggle, width }) {
                 )}
             </Box>
 
-            {/* Command palette trigger */}
-            {!collapsed && (
+            {/* ============ COMMAND PALETTE TRIGGER (desktop only) ============ */}
+            {!effectiveCollapsed && !isMobile && (
                 <Box sx={{ px: 1.5, pt: 2 }}>
                     <Box
                         onClick={openPalette}
@@ -130,11 +162,11 @@ export default function Sidebar({ collapsed, onToggle, width }) {
                 </Box>
             )}
 
-            {/* Nav */}
+            {/* ============ NAVIGATION ============ */}
             <Box sx={{ flex: 1, pt: 2, overflowY: "auto" }}>
                 {NAV_SECTIONS.map((section) => (
                     <Box key={section.heading} sx={{ mb: 2 }}>
-                        {!collapsed && (
+                        {!effectiveCollapsed && (
                             <Typography
                                 sx={{
                                     px: 3,
@@ -151,23 +183,25 @@ export default function Sidebar({ collapsed, onToggle, width }) {
                         )}
                         <Box sx={{ px: 1.5 }}>
                             {section.items.map((item) => (
-                                <Tooltip key={item.path} title={collapsed ? item.label : ""} placement="right">
+                                <Tooltip
+                                    key={item.path}
+                                    title={effectiveCollapsed ? item.label : ""}
+                                    placement="right"
+                                >
                                     <ListItemButton
-                                        onClick={() => navigate(item.path)}
+                                        onClick={() => handleNavClick(item.path)}
                                         sx={{
                                             borderRadius: 2,
                                             mb: 0.5,
-                                            px: collapsed ? 0 : 1.5,
+                                            px: effectiveCollapsed ? 0 : 1.5,
                                             py: 1,
-                                            justifyContent: collapsed ? "center" : "flex-start",
+                                            justifyContent: effectiveCollapsed ? "center" : "flex-start",
                                             bgcolor: isActive(item.path)
                                                 ? isDark
                                                     ? "rgba(139, 92, 246, 0.15)"
                                                     : "#F5F3FF"
                                                 : "transparent",
-                                            color: isActive(item.path)
-                                                ? "#A78BFA"
-                                                : "text.secondary",
+                                            color: isActive(item.path) ? "#A78BFA" : "text.secondary",
                                             border: isActive(item.path)
                                                 ? "1px solid rgba(139, 92, 246, 0.3)"
                                                 : "1px solid transparent",
@@ -185,7 +219,7 @@ export default function Sidebar({ collapsed, onToggle, width }) {
                                         <ListItemIcon
                                             sx={{
                                                 minWidth: 0,
-                                                mr: collapsed ? 0 : 2,
+                                                mr: effectiveCollapsed ? 0 : 2,
                                                 color: "inherit",
                                                 justifyContent: "center",
                                                 "& .MuiSvgIcon-root": { fontSize: 18 },
@@ -193,7 +227,7 @@ export default function Sidebar({ collapsed, onToggle, width }) {
                                         >
                                             {item.icon}
                                         </ListItemIcon>
-                                        {!collapsed && (
+                                        {!effectiveCollapsed && (
                                             <ListItemText
                                                 primary={item.label}
                                                 primaryTypographyProps={{
@@ -212,16 +246,23 @@ export default function Sidebar({ collapsed, onToggle, width }) {
 
             <Divider />
 
-            {/* Theme toggle */}
-            <Box sx={{ px: collapsed ? 0 : 2, py: 1.5, display: "flex", justifyContent: "center" }}>
-                <ThemeToggle collapsed={collapsed} />
+            {/* ============ THEME TOGGLE ============ */}
+            <Box
+                sx={{
+                    px: effectiveCollapsed ? 0 : 2,
+                    py: 1.5,
+                    display: "flex",
+                    justifyContent: "center",
+                }}
+            >
+                <ThemeToggle collapsed={effectiveCollapsed} />
             </Box>
 
             <Divider />
 
-            {/* User */}
-            <Box sx={{ p: collapsed ? 1 : 2 }}>
-                {!collapsed && (
+            {/* ============ USER + LOGOUT ============ */}
+            <Box sx={{ p: effectiveCollapsed ? 1 : 2 }}>
+                {!effectiveCollapsed && (
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1, px: 1 }}>
                         <Avatar
                             sx={{
@@ -249,14 +290,14 @@ export default function Sidebar({ collapsed, onToggle, width }) {
                         </Box>
                     </Box>
                 )}
-                <Tooltip title={collapsed ? "Logout" : ""} placement="right">
+                <Tooltip title={effectiveCollapsed ? "Logout" : ""} placement="right">
                     <ListItemButton
                         onClick={handleLogout}
                         sx={{
                             borderRadius: 2,
-                            px: collapsed ? 0 : 1.5,
+                            px: effectiveCollapsed ? 0 : 1.5,
                             py: 1,
-                            justifyContent: collapsed ? "center" : "flex-start",
+                            justifyContent: effectiveCollapsed ? "center" : "flex-start",
                             color: "text.secondary",
                             "&:hover": {
                                 bgcolor: isDark ? "rgba(239, 68, 68, 0.1)" : "#FEE2E2",
@@ -267,7 +308,7 @@ export default function Sidebar({ collapsed, onToggle, width }) {
                         <ListItemIcon
                             sx={{
                                 minWidth: 0,
-                                mr: collapsed ? 0 : 2,
+                                mr: effectiveCollapsed ? 0 : 2,
                                 color: "inherit",
                                 justifyContent: "center",
                                 "& .MuiSvgIcon-root": { fontSize: 18 },
@@ -275,7 +316,7 @@ export default function Sidebar({ collapsed, onToggle, width }) {
                         >
                             <LogoutIcon />
                         </ListItemIcon>
-                        {!collapsed && (
+                        {!effectiveCollapsed && (
                             <ListItemText
                                 primary="Logout"
                                 primaryTypographyProps={{ fontSize: "0.875rem", fontWeight: 500 }}
@@ -284,6 +325,43 @@ export default function Sidebar({ collapsed, onToggle, width }) {
                     </ListItemButton>
                 </Tooltip>
             </Box>
+        </Box>
+    );
+
+    // ============ MOBILE: RENDER AS DRAWER ============
+    if (isMobile) {
+        return (
+            <Drawer
+                anchor="left"
+                open={mobileOpen}
+                onClose={onMobileClose}
+                ModalProps={{ keepMounted: true }} // better performance on mobile
+                sx={{
+                    "& .MuiDrawer-paper": {
+                        width: 280,
+                        boxSizing: "border-box",
+                        border: "none",
+                    },
+                }}
+            >
+                {sidebarContent}
+            </Drawer>
+        );
+    }
+
+    // ============ DESKTOP: RENDER AS FIXED SIDEBAR ============
+    return (
+        <Box
+            sx={{
+                width,
+                position: "fixed",
+                top: 0,
+                left: 0,
+                height: "100vh",
+                zIndex: 1200,
+            }}
+        >
+            {sidebarContent}
         </Box>
     );
 }

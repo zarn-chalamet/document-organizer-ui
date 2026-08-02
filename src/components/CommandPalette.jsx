@@ -32,9 +32,18 @@ export default function CommandPalette() {
         }
     }, [open]);
 
-    const staticActions = [
+        const staticActions = [
         { icon: <DashboardIcon />, label: "Go to Dashboard", action: () => navigate("/") },
-        { icon: <ChatIcon />, label: "Open AI Assistant", action: () => navigate("/chat") },
+        {
+            icon: <ChatIcon />,
+            label: "Open AI Assistant",
+            action: () => {
+                // Trigger the ChatWidget by dispatching Ctrl+J
+                document.dispatchEvent(
+                    new KeyboardEvent("keydown", { key: "j", metaKey: true })
+                );
+            },
+        },
     ];
 
     const filterQuery = query.toLowerCase();
