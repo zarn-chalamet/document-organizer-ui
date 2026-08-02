@@ -93,7 +93,7 @@ export default function DocumentDetail() {
                 <Box sx={{
                     display: "grid",
                     gap: 3,
-                    gridTemplateColumns: { xs: "1fr", md: "1fr 380px" },
+                    gridTemplateColumns: { xs: "1fr", lg: "1fr 340px" },
                 }}>
                     <Skeleton variant="rounded" height={340} sx={{ borderRadius: 3 }} />
                     <Skeleton variant="rounded" height={340} sx={{ borderRadius: 3 }} />
@@ -193,7 +193,7 @@ export default function DocumentDetail() {
             <Box sx={{
                 display: "grid",
                 gap: 3,
-                gridTemplateColumns: { xs: "1fr", md: "1fr 380px" },
+                gridTemplateColumns: { xs: "1fr", lg: "1fr 340px" },
                 alignItems: "start",
             }}>
                 {/* Left: Details */}

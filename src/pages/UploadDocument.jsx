@@ -326,11 +326,19 @@ export default function UploadDocument() {
                     )}
 
                     {/* Actions */}
-                    <Box sx={{ mt: 4, display: "flex", gap: 1.5, justifyContent: "flex-end" }}>
+                    <Box sx={{
+                        mt: 4,
+                        display: "flex",
+                        gap: 1.5,
+                        flexDirection: { xs: "column-reverse", sm: "row" },
+                        justifyContent: { xs: "stretch", sm: "flex-end" },
+                    }}>
                         <Button
                             onClick={() => navigate(`/categories/${categoryId}`)}
                             disabled={uploading}
                             color="inherit"
+                            fullWidth={false}
+                            sx={{ width: { xs: "100%", sm: "auto" } }}
                         >
                             Cancel
                         </Button>
@@ -338,7 +346,10 @@ export default function UploadDocument() {
                             variant="contained"
                             onClick={uploadMode === "single" ? handleSingleUpload : handleBulkUpload}
                             disabled={uploading || (uploadMode === "single" ? !file : files.length === 0)}
-                            sx={{ boxShadow: "0 4px 14px -4px rgba(139, 92, 246, 0.5)" }}
+                            sx={{
+                                width: { xs: "100%", sm: "auto" },
+                                boxShadow: "0 4px 14px -4px rgba(139, 92, 246, 0.5)",
+                            }}
                         >
                             {uploading
                                 ? "Uploading..."
