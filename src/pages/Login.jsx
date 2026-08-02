@@ -1,5 +1,5 @@
 import React from "react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Box, Button, Typography, Container } from "@mui/material";
 import GoogleIcon from "@mui/icons-material/Google";
@@ -9,10 +9,16 @@ import ShieldIcon from "@mui/icons-material/Shield";
 import BoltIcon from "@mui/icons-material/Bolt";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import Logo from "../components/Logo";
+import TermsPrivacyModal from "../components/TermsPrivacyModal";
 
 export default function Login() {
     const navigate = useNavigate();
-    
+    const [legalOpen, setLegalOpen] = useState(false);
+    const [legalTab, setLegalTab] = useState(0); // 0 = Terms, 1 = Privacy
+
+    const openTerms = () => { setLegalTab(0); setLegalOpen(true); };
+    const openPrivacy = () => { setLegalTab(1); setLegalOpen(true); };
+
     // Redirect to dashboard if already logged in with valid token
     useEffect(() => {
         const token = localStorage.getItem("accessToken");
@@ -261,6 +267,7 @@ export default function Login() {
                         By continuing, you agree to our{" "}
                         <Box
                             component="span"
+                            onClick={openTerms}
                             sx={{
                                 color: "primary.main",
                                 cursor: "pointer",
@@ -273,6 +280,7 @@ export default function Login() {
                         and{" "}
                         <Box
                             component="span"
+                            onClick={openPrivacy}
                             sx={{
                                 color: "primary.main",
                                 cursor: "pointer",
@@ -486,6 +494,12 @@ export default function Login() {
                     </Typography>
                 </Box>
             </Box>
+
+            <TermsPrivacyModal
+                open={legalOpen}
+                onClose={() => setLegalOpen(false)}
+                initialTab={legalTab}
+            />
         </Box>
     );
 }
