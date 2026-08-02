@@ -7,6 +7,7 @@ import SendIcon from "@mui/icons-material/Send";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import CloseIcon from "@mui/icons-material/Close";
+import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import { toast } from "sonner";
 import { useLocation } from "react-router-dom";
 import ChatMessage from "./ChatMessage";
@@ -24,8 +25,12 @@ const SUGGESTED_PROMPTS = [
     { icon: "📄", text: "Summarize my documents" },
 ];
 
-// Routes where the chat widget should NOT appear
 const HIDDEN_ROUTES = ["/login", "/oauth-success"];
+
+// Panel width constants
+const MIN_WIDTH = 400;
+const MAX_WIDTH = 900;
+const DEFAULT_WIDTH = 520;
 
 export default function ChatWidget({ isMobile = false, topbarHeight = 60 }) {
     const location = useLocation();
@@ -34,9 +39,17 @@ export default function ChatWidget({ isMobile = false, topbarHeight = 60 }) {
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
     const [hasUnread, setHasUnread] = useState(false);
+
+    // ============ RESIZE STATE ============
+    const [panelWidth, setPanelWidth] = useState(() => {
+        const saved = localStorage.getItem("chatPanelWidth");
+        const parsed = saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
+        return Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, parsed));
+    });
+    const [isResizing, setIsResizing] = useState(false);
+
     const bottomRef = useRef(null);
     const inputRef = useRef(null);
-
     const hidden = HIDDEN_ROUTES.includes(location.pathname);
 
     // Auto-scroll to bottom on new messages
@@ -52,7 +65,7 @@ export default function ChatWidget({ isMobile = false, topbarHeight = 60 }) {
         }
     }, [open]);
 
-    // Keyboard shortcuts: Ctrl/Cmd+J to toggle, Esc to close
+    // Keyboard shortcuts
     useEffect(() => {
         const handler = (e) => {
             if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "j") {
@@ -66,6 +79,41 @@ export default function ChatWidget({ isMobile = false, topbarHeight = 60 }) {
         document.addEventListener("keydown", handler);
         return () => document.removeEventListener("keydown", handler);
     }, [open]);
+
+    // ============ HANDLE DRAG-TO-RESIZE ============
+    useEffect(() => {
+        if (!isResizing) return;
+
+        const handleMouseMove = (e) => {
+            const newWidth = window.innerWidth - e.clientX;
+            const clamped = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, newWidth));
+            setPanelWidth(clamped);
+        };
+
+        const handleMouseUp = () => {
+            setIsResizing(false);
+            localStorage.setItem("chatPanelWidth", String(panelWidth));
+        };
+
+        document.addEventListener("mousemove", handleMouseMove);
+        document.addEventListener("mouseup", handleMouseUp);
+        document.body.style.cursor = "ew-resize";
+        document.body.style.userSelect = "none";
+
+        return () => {
+            document.removeEventListener("mousemove", handleMouseMove);
+            document.removeEventListener("mouseup", handleMouseUp);
+            document.body.style.cursor = "";
+            document.body.style.userSelect = "";
+        };
+    }, [isResizing, panelWidth]);
+
+    // Double-click to reset width
+    const handleResetWidth = () => {
+        setPanelWidth(DEFAULT_WIDTH);
+        localStorage.setItem("chatPanelWidth", String(DEFAULT_WIDTH));
+        toast.success("Panel size reset");
+    };
 
     const sendMessage = async (text) => {
         const question = (text || input).trim();
@@ -110,7 +158,7 @@ export default function ChatWidget({ isMobile = false, topbarHeight = 60 }) {
 
     return (
         <>
-            {/* ============ FAB (floating button, bottom-right) ============ */}
+            {/* ============ FAB ============ */}
             <Zoom in={!open}>
                 <Tooltip title="AI Assistant  (Ctrl+J)" placement="left">
                     <Badge
@@ -185,59 +233,170 @@ export default function ChatWidget({ isMobile = false, topbarHeight = 60 }) {
                         top: 0,
                         right: 0,
                         height: "100vh",
-                        width: { xs: "100%", sm: 440 },
+                        width: {
+                            xs: "100%",
+                            sm: `${panelWidth}px`,
+                        },
                         bgcolor: "background.paper",
                         borderLeft: { xs: "none", sm: "1px solid" },
                         borderColor: "divider",
                         zIndex: 1250,
                         display: "flex",
                         flexDirection: "column",
-                        boxShadow: "-8px 0 32px rgba(0, 0, 0, 0.3)",
+                        boxShadow: "-8px 0 40px rgba(0, 0, 0, 0.4)",
+                        transition: isResizing ? "none" : "width 0.2s ease",
                     }}
                 >
-                    {/* Header */}
+                    {/* ============ RESIZE HANDLE ============ */}
+                    <Box
+                        onMouseDown={(e) => {
+                            e.preventDefault();
+                            setIsResizing(true);
+                        }}
+                        onDoubleClick={handleResetWidth}
+                        sx={{
+                            position: "absolute",
+                            left: -3,
+                            top: 0,
+                            bottom: 0,
+                            width: 6,
+                            cursor: "ew-resize",
+                            display: { xs: "none", sm: "flex" },
+                            alignItems: "center",
+                            justifyContent: "center",
+                            zIndex: 20,
+                            transition: "all 0.15s ease",
+                            "&:hover": {
+                                "& .resize-bar": {
+                                    opacity: 1,
+                                    width: 3,
+                                },
+                                "& .resize-handle-icon": {
+                                    opacity: 1,
+                                },
+                            },
+                            ...(isResizing && {
+                                "& .resize-bar": {
+                                    opacity: 1,
+                                    width: 3,
+                                    background: "linear-gradient(180deg, transparent 0%, #8B5CF6 30%, #EC4899 70%, transparent 100%)",
+                                },
+                            }),
+                        }}
+                    >
+                        {/* Resize bar */}
+                        <Box
+                            className="resize-bar"
+                            sx={{
+                                position: "absolute",
+                                left: "50%",
+                                top: 0,
+                                bottom: 0,
+                                width: 2,
+                                transform: "translateX(-50%)",
+                                background: "linear-gradient(180deg, transparent 0%, rgba(139, 92, 246, 0.6) 30%, rgba(236, 72, 153, 0.6) 70%, transparent 100%)",
+                                opacity: 0,
+                                transition: "all 0.15s ease",
+                                pointerEvents: "none",
+                            }}
+                        />
+                        {/* Drag icon indicator */}
+                        <Box
+                            className="resize-handle-icon"
+                            sx={{
+                                position: "absolute",
+                                left: "50%",
+                                top: "50%",
+                                transform: "translate(-50%, -50%)",
+                                width: 20,
+                                height: 32,
+                                borderRadius: 1,
+                                bgcolor: "background.paper",
+                                border: "1px solid",
+                                borderColor: "divider",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                opacity: 0,
+                                transition: "opacity 0.15s ease",
+                                pointerEvents: "none",
+                                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
+                            }}
+                        >
+                            <DragIndicatorIcon sx={{ fontSize: 14, color: "text.secondary" }} />
+                        </Box>
+                    </Box>
+
+                    {/* ============ HEADER ============ */}
                     <Box
                         sx={{
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "space-between",
-                            px: 2.5,
+                            px: 3,
                             py: 2,
                             borderBottom: "1px solid",
                             borderColor: "divider",
                             flexShrink: 0,
+                            background: "linear-gradient(180deg, rgba(139, 92, 246, 0.03) 0%, transparent 100%)",
                         }}
                     >
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                             <Box
                                 sx={{
-                                    width: 36,
-                                    height: 36,
+                                    position: "relative",
+                                    width: 38,
+                                    height: 38,
                                     borderRadius: 2,
                                     background: "linear-gradient(135deg, #8B5CF6, #EC4899)",
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
                                     boxShadow: "0 4px 12px -2px rgba(139, 92, 246, 0.5)",
+                                    "&::after": {
+                                        content: '""',
+                                        position: "absolute",
+                                        bottom: -2,
+                                        right: -2,
+                                        width: 10,
+                                        height: 10,
+                                        borderRadius: "50%",
+                                        bgcolor: "#10B981",
+                                        border: "2px solid",
+                                        borderColor: "background.paper",
+                                        boxShadow: "0 0 8px #10B981",
+                                    },
                                 }}
                             >
-                                <SmartToyIcon sx={{ color: "white", fontSize: 18 }} />
+                                <SmartToyIcon sx={{ color: "white", fontSize: 20 }} />
                             </Box>
                             <Box>
                                 <Typography variant="subtitle1" fontWeight={700} sx={{ lineHeight: 1.2 }}>
                                     AI Assistant
                                 </Typography>
-                                <Typography
-                                    variant="caption"
-                                    sx={{
-                                        color: "text.secondary",
-                                        fontFamily: "'JetBrains Mono', monospace",
-                                        fontSize: "0.625rem",
-                                        letterSpacing: "0.05em",
-                                    }}
-                                >
-                                    POWERED BY GROQ
-                                </Typography>
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mt: 0.25 }}>
+                                    <Box
+                                        sx={{
+                                            width: 5,
+                                            height: 5,
+                                            borderRadius: "50%",
+                                            bgcolor: "#10B981",
+                                            boxShadow: "0 0 6px #10B981",
+                                        }}
+                                    />
+                                    <Typography
+                                        sx={{
+                                            color: "text.secondary",
+                                            fontFamily: "'JetBrains Mono', monospace",
+                                            fontSize: "0.625rem",
+                                            letterSpacing: "0.08em",
+                                            textTransform: "uppercase",
+                                            fontWeight: 600,
+                                        }}
+                                    >
+                                        Online · Powered by Groq
+                                    </Typography>
+                                </Box>
                             </Box>
                         </Box>
                         <Box sx={{ display: "flex", gap: 0.5 }}>
@@ -256,17 +415,35 @@ export default function ChatWidget({ isMobile = false, topbarHeight = 60 }) {
                         </Box>
                     </Box>
 
-                    {/* Messages */}
+                    {/* ============ MESSAGES AREA ============ */}
                     <Box
                         sx={{
                             flex: 1,
                             overflowY: "auto",
-                            px: 2,
-                            py: 2.5,
+                            px: 3,
+                            py: 3,
+                            position: "relative",
+                            // Custom scrollbar
                             "&::-webkit-scrollbar": { width: 6 },
+                            "&::-webkit-scrollbar-track": { background: "transparent" },
                             "&::-webkit-scrollbar-thumb": {
-                                bgcolor: "divider",
+                                bgcolor: "rgba(139, 92, 246, 0.3)",
                                 borderRadius: 3,
+                                "&:hover": { bgcolor: "rgba(139, 92, 246, 0.5)" },
+                            },
+                            // Ambient glow at top
+                            "&::before": {
+                                content: '""',
+                                position: "sticky",
+                                top: 0,
+                                display: "block",
+                                width: "100%",
+                                height: 40,
+                                marginTop: -3,
+                                marginBottom: -1,
+                                background: "linear-gradient(180deg, rgba(139, 92, 246, 0.06) 0%, transparent 100%)",
+                                pointerEvents: "none",
+                                zIndex: 1,
                             },
                         }}
                     >
@@ -274,8 +451,9 @@ export default function ChatWidget({ isMobile = false, topbarHeight = 60 }) {
                             <ChatMessage key={i} message={msg} />
                         ))}
 
+                        {/* ============ LOADING INDICATOR ============ */}
                         {loading && (
-                            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
+                            <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5, mb: 2.5 }}>
                                 <Box
                                     sx={{
                                         width: 32,
@@ -294,42 +472,64 @@ export default function ChatWidget({ isMobile = false, topbarHeight = 60 }) {
                                 <Paper
                                     elevation={0}
                                     sx={{
-                                        px: 2, py: 1.5,
+                                        px: 2.5,
+                                        py: 1.75,
                                         bgcolor: "background.default",
                                         border: "1px solid",
                                         borderColor: "divider",
                                         borderRadius: "16px 16px 16px 4px",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 0.75,
                                     }}
                                 >
-                                    <CircularProgress size={14} sx={{ color: "primary.main" }} />
+                                    {[0, 1, 2].map((i) => (
+                                        <Box
+                                            key={i}
+                                            sx={{
+                                                width: 6,
+                                                height: 6,
+                                                borderRadius: "50%",
+                                                background: "linear-gradient(135deg, #8B5CF6, #EC4899)",
+                                                animation: "typingDot 1.4s ease-in-out infinite",
+                                                animationDelay: `${i * 0.15}s`,
+                                                "@keyframes typingDot": {
+                                                    "0%, 60%, 100%": { transform: "translateY(0)", opacity: 0.4 },
+                                                    "30%": { transform: "translateY(-6px)", opacity: 1 },
+                                                },
+                                            }}
+                                        />
+                                    ))}
                                 </Paper>
                             </Box>
                         )}
 
+                        {/* ============ SUGGESTED PROMPTS ============ */}
                         {showSuggestions && !loading && (
                             <Box sx={{ mt: 3 }}>
                                 <Typography
                                     sx={{
                                         display: "block",
-                                        mb: 1.5,
+                                        mb: 1.75,
                                         ml: 0.5,
                                         fontFamily: "'JetBrains Mono', monospace",
-                                        fontSize: "0.625rem",
+                                        fontSize: "0.6875rem",
                                         fontWeight: 700,
                                         letterSpacing: "0.1em",
                                         color: "primary.main",
                                         textTransform: "uppercase",
                                     }}
                                 >
-                                    Suggested Questions
+                                    ✨ Try asking
                                 </Typography>
                                 <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
                                     {SUGGESTED_PROMPTS.map((prompt, i) => (
                                         <Paper
                                             key={i}
                                             onClick={() => sendMessage(prompt.text)}
+                                            elevation={0}
                                             sx={{
-                                                p: 1.5,
+                                                p: 1.75,
                                                 display: "flex",
                                                 alignItems: "center",
                                                 gap: 1.5,
@@ -337,15 +537,24 @@ export default function ChatWidget({ isMobile = false, topbarHeight = 60 }) {
                                                 borderColor: "divider",
                                                 borderRadius: 2,
                                                 cursor: "pointer",
-                                                transition: "all 0.15s",
+                                                bgcolor: "background.default",
+                                                transition: "all 0.2s ease",
+                                                animation: `slideIn 0.4s ease ${i * 0.08}s backwards`,
+                                                "@keyframes slideIn": {
+                                                    "0%": { opacity: 0, transform: "translateY(8px)" },
+                                                    "100%": { opacity: 1, transform: "translateY(0)" },
+                                                },
                                                 "&:hover": {
                                                     borderColor: "primary.main",
-                                                    bgcolor: "action.hover",
-                                                    transform: "translateX(2px)",
+                                                    bgcolor: "rgba(139, 92, 246, 0.05)",
+                                                    transform: "translateX(4px)",
+                                                    boxShadow: "0 4px 12px -4px rgba(139, 92, 246, 0.2)",
                                                 },
                                             }}
                                         >
-                                            <Typography sx={{ fontSize: "1rem" }}>{prompt.icon}</Typography>
+                                            <Typography sx={{ fontSize: "1.125rem", flexShrink: 0 }}>
+                                                {prompt.icon}
+                                            </Typography>
                                             <Typography variant="body2" fontWeight={500} sx={{ fontSize: "0.8125rem" }}>
                                                 {prompt.text}
                                             </Typography>
@@ -358,8 +567,18 @@ export default function ChatWidget({ isMobile = false, topbarHeight = 60 }) {
                         <div ref={bottomRef} />
                     </Box>
 
-                    {/* Input */}
-                    <Box sx={{ px: 2, pb: 2, pt: 1, flexShrink: 0 }}>
+                    {/* ============ INPUT AREA ============ */}
+                    <Box
+                        sx={{
+                            px: 3,
+                            pb: 2.5,
+                            pt: 1.5,
+                            flexShrink: 0,
+                            borderTop: "1px solid",
+                            borderColor: "divider",
+                            background: "linear-gradient(0deg, rgba(139, 92, 246, 0.03) 0%, transparent 100%)",
+                        }}
+                    >
                         <Paper
                             elevation={0}
                             sx={{
@@ -370,11 +589,11 @@ export default function ChatWidget({ isMobile = false, topbarHeight = 60 }) {
                                 display: "flex",
                                 alignItems: "flex-end",
                                 gap: 0.5,
-                                transition: "all 0.15s",
+                                transition: "all 0.2s ease",
                                 bgcolor: "background.default",
                                 "&:focus-within": {
                                     borderColor: "primary.main",
-                                    boxShadow: "0 0 0 3px rgba(139, 92, 246, 0.15)",
+                                    boxShadow: "0 0 0 3px rgba(139, 92, 246, 0.15), 0 4px 12px -2px rgba(139, 92, 246, 0.15)",
                                 },
                             }}
                         >
@@ -382,7 +601,7 @@ export default function ChatWidget({ isMobile = false, topbarHeight = 60 }) {
                                 inputRef={inputRef}
                                 fullWidth
                                 multiline
-                                maxRows={4}
+                                maxRows={6}
                                 placeholder="Ask about your documents..."
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
@@ -390,23 +609,27 @@ export default function ChatWidget({ isMobile = false, topbarHeight = 60 }) {
                                 variant="standard"
                                 InputProps={{ disableUnderline: true }}
                                 sx={{
-                                    px: 1.25, py: 0.5,
-                                    "& textarea": { fontSize: "0.875rem" },
+                                    px: 1.5,
+                                    py: 0.75,
+                                    "& textarea": { fontSize: "0.9375rem", lineHeight: 1.5 },
                                 }}
                             />
                             <IconButton
                                 onClick={() => sendMessage()}
                                 disabled={!input.trim() || loading}
                                 sx={{
-                                    background: input.trim() ? "linear-gradient(135deg, #8B5CF6, #7C3AED)" : "transparent",
+                                    background: input.trim()
+                                        ? "linear-gradient(135deg, #8B5CF6, #7C3AED)"
+                                        : "transparent",
                                     color: "white",
-                                    width: 34,
-                                    height: 34,
-                                    transition: "all 0.15s",
+                                    width: 36,
+                                    height: 36,
+                                    transition: "all 0.15s ease",
                                     flexShrink: 0,
                                     "&:hover": {
                                         background: "linear-gradient(135deg, #7C3AED, #6D28D9)",
-                                        boxShadow: "0 0 15px rgba(139, 92, 246, 0.4)",
+                                        boxShadow: "0 0 15px rgba(139, 92, 246, 0.5)",
+                                        transform: "scale(1.05)",
                                     },
                                     "&:disabled": {
                                         background: "transparent",
@@ -417,23 +640,62 @@ export default function ChatWidget({ isMobile = false, topbarHeight = 60 }) {
                                 <SendIcon sx={{ fontSize: 16 }} />
                             </IconButton>
                         </Paper>
-                        <Typography
-                            variant="caption"
+
+                        {/* Footer hints */}
+                        <Box
                             sx={{
-                                display: "block",
-                                textAlign: "center",
-                                mt: 1,
-                                color: "text.disabled",
-                                fontSize: "0.6875rem",
-                                fontFamily: "'JetBrains Mono', monospace",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                mt: 1.25,
+                                px: 0.5,
                             }}
                         >
-                            Press <Box component="kbd" sx={{
-                                px: 0.5, py: 0.25, borderRadius: 0.5,
-                                bgcolor: "action.hover", border: "1px solid", borderColor: "divider",
-                                fontSize: "0.6875rem",
-                            }}>Enter</Box> to send · Your data stays private
-                        </Typography>
+                            <Typography
+                                sx={{
+                                    color: "text.disabled",
+                                    fontSize: "0.6875rem",
+                                    fontFamily: "'JetBrains Mono', monospace",
+                                }}
+                            >
+                                <Box
+                                    component="kbd"
+                                    sx={{
+                                        px: 0.5,
+                                        py: 0.25,
+                                        borderRadius: 0.5,
+                                        bgcolor: "action.hover",
+                                        border: "1px solid",
+                                        borderColor: "divider",
+                                        fontSize: "0.6875rem",
+                                        mr: 0.5,
+                                    }}
+                                >
+                                    Enter
+                                </Box>
+                                to send
+                            </Typography>
+                            <Typography
+                                sx={{
+                                    color: "text.disabled",
+                                    fontSize: "0.6875rem",
+                                    fontFamily: "'JetBrains Mono', monospace",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 0.5,
+                                }}
+                            >
+                                <Box
+                                    sx={{
+                                        width: 5,
+                                        height: 5,
+                                        borderRadius: "50%",
+                                        bgcolor: "#10B981",
+                                    }}
+                                />
+                                Private & secure
+                            </Typography>
+                        </Box>
                     </Box>
                 </Box>
             </Slide>
