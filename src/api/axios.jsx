@@ -1,4 +1,5 @@
 import axios from "axios";
+import { toast } from "sonner";
 
 const API_BASE = "http://localhost:8080/v1/api";
 
@@ -19,9 +20,19 @@ api.interceptors.response.use(
   (res) => res,
   async (err) => {
     if (err.response && err.response.status === 401) {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("email");
-      window.location.href = "/login";
+      // Prevent redirect loop if already on login page
+      const isLoginPage = window.location.pathname === "/login";
+      
+      if (!isLoginPage) {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("email");
+        toast.error("Your session has expired. Please sign in again.");
+        
+        // Delay so toast is visible before redirect
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 800);
+      }
     }
     return Promise.reject(err);
   }

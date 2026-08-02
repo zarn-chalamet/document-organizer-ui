@@ -1,4 +1,6 @@
 import React from "react";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Box, Button, Typography, Container } from "@mui/material";
 import GoogleIcon from "@mui/icons-material/Google";
 import FolderIcon from "@mui/icons-material/Folder";
@@ -9,6 +11,30 @@ import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import Logo from "../components/Logo";
 
 export default function Login() {
+    const navigate = useNavigate();
+    
+    // Redirect to dashboard if already logged in with valid token
+    useEffect(() => {
+        const token = localStorage.getItem("accessToken");
+        if (token) {
+            try {
+                const payload = JSON.parse(atob(token.split(".")[1]));
+                const now = Math.floor(Date.now() / 1000);
+                if (payload.exp > now) {
+                    navigate("/", { replace: true });
+                } else {
+                    // Expired — clean up
+                    localStorage.removeItem("accessToken");
+                    localStorage.removeItem("email");
+                }
+            } catch (err) {
+                localStorage.removeItem("accessToken");
+                localStorage.removeItem("email");
+                console.error("Invalid JWT format:", err);
+            }
+        }
+    }, [navigate]);
+
     const handleLogin = () => {
         window.location.href = "http://localhost:8080/oauth2/authorization/google";
     };
