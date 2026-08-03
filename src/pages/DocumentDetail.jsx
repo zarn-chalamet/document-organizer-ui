@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
     Typography, Button, Box, Card, CardContent,
-    Chip, Skeleton, Divider
+    Chip, Skeleton, Divider, Collapse, IconButton
 } from "@mui/material";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditIcon from "@mui/icons-material/EditOutlined";
@@ -15,12 +15,18 @@ import DashboardIcon from "@mui/icons-material/SpaceDashboard";
 import FolderIcon from "@mui/icons-material/Folder";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import DownloadIcon from "@mui/icons-material/FileDownloadOutlined";
+import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import TuneIcon from "@mui/icons-material/Tune";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import api from "../api/axios";
 import PageHeader from "../components/PageHeader";
 import StatusBadge from "../components/StatusBadge";
 import AiVerificationBanner from "../components/AiVerificationBanner";
+import InsightsPanel from "../components/InsightsPanel";
+import ActionButton from "../components/ActionButton";
+import { openChatWithDocument } from "../components/chatBus";
 import EditDocumentModal from "../components/EditDocumentModal";
 import MoveDocumentModal from "../components/MoveDocumentModal";
 import DeleteDocumentModal from "../components/DeleteDocumentModal";
@@ -34,6 +40,7 @@ export default function DocumentDetail() {
     const [editOpen, setEditOpen] = useState(false);
     const [moveOpen, setMoveOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
+    const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
 
     const loadDocument = async () => {
         try {
@@ -112,7 +119,6 @@ export default function DocumentDetail() {
 
     const expiryInfo = getExpiryInfo(doc.expiryDate);
 
-    // Determine if AI verification banner should show
     const showVerificationBanner =
         doc.extractedExpiryDate &&
         doc.expiryDate &&
@@ -163,6 +169,204 @@ export default function DocumentDetail() {
         </Box>
     );
 
+    // ============ REUSABLE ACTIONS CONTENT ============
+    const ActionsContent = () => (
+        <>
+            {/* HERO: DISCUSS WITH AI */}
+            <Card
+                sx={{
+                    overflow: "hidden",
+                    position: "relative",
+                    background: "linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(236, 72, 153, 0.08) 100%)",
+                    border: "1px solid",
+                    borderColor: "rgba(139, 92, 246, 0.3)",
+                    "&:hover": {
+                        borderColor: "rgba(139, 92, 246, 0.5)",
+                        transform: "translateY(-2px)",
+                        boxShadow: "0 16px 40px -12px rgba(139, 92, 246, 0.35)",
+                    },
+                }}
+            >
+                <Box
+                    sx={{
+                        position: "absolute",
+                        top: -40, right: -40,
+                        width: 160, height: 160,
+                        borderRadius: "50%",
+                        background: "radial-gradient(circle, rgba(139, 92, 246, 0.25) 0%, transparent 70%)",
+                        filter: "blur(30px)",
+                        pointerEvents: "none",
+                    }}
+                />
+                <CardContent sx={{ p: 2.5, position: "relative", "&:last-child": { pb: 2.5 } }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1.5 }}>
+                        <Box
+                            sx={{
+                                width: 36, height: 36, borderRadius: 2,
+                                background: "linear-gradient(135deg, #8B5CF6, #EC4899)",
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                boxShadow: "0 4px 12px -2px rgba(139, 92, 246, 0.5)",
+                            }}
+                        >
+                            <ChatBubbleOutlineIcon sx={{ color: "white", fontSize: 18 }} />
+                        </Box>
+                        <Box>
+                            <Typography variant="subtitle2" fontWeight={700} sx={{ lineHeight: 1.2 }}>
+                                Ask AI About This
+                            </Typography>
+                            <Typography sx={{
+                                fontSize: "0.6875rem",
+                                color: "text.secondary",
+                                fontFamily: "'JetBrains Mono', monospace",
+                                letterSpacing: "0.05em",
+                            }}>
+                                Get instant answers
+                            </Typography>
+                        </Box>
+                    </Box>
+                    <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ display: "block", mb: 2, fontSize: "0.75rem", lineHeight: 1.5 }}
+                    >
+                        Ask questions about renewal, rules, or requirements for this specific document.
+                    </Typography>
+                    <Button
+                        variant="contained"
+                        startIcon={<ChatBubbleOutlineIcon />}
+                        onClick={() => {
+                            openChatWithDocument(doc);
+                            setMobileActionsOpen(false);
+                        }}
+                        fullWidth
+                        sx={{
+                            background: "linear-gradient(135deg, #8B5CF6, #EC4899)",
+                            boxShadow: "0 4px 14px -4px rgba(139, 92, 246, 0.5)",
+                            py: 1.1,
+                            "&:hover": {
+                                background: "linear-gradient(135deg, #7C3AED, #DB2777)",
+                                boxShadow: "0 6px 20px -4px rgba(139, 92, 246, 0.7)",
+                            },
+                        }}
+                    >
+                        Start Conversation
+                    </Button>
+                </CardContent>
+            </Card>
+
+            {/* FILE ACTIONS */}
+            <Card>
+                <CardContent sx={{ p: 2.5, "&:last-child": { pb: 2.5 } }}>
+                    <Typography sx={{
+                        fontFamily: "'JetBrains Mono', monospace",
+                        fontSize: "0.625rem",
+                        fontWeight: 700,
+                        letterSpacing: "0.1em",
+                        color: "text.secondary",
+                        mb: 1.5,
+                        textTransform: "uppercase",
+                        display: "flex", alignItems: "center", gap: 0.75,
+                    }}>
+                        <DescriptionIcon sx={{ fontSize: 12 }} />
+                        File
+                    </Typography>
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
+                        <ActionButton
+                            icon={<OpenInNewIcon />}
+                            label="Open in Drive"
+                            hint="View original file"
+                            component="a"
+                            href={doc.driveFileLink}
+                            target="_blank"
+                        />
+                        <ActionButton
+                            icon={<DownloadIcon />}
+                            label="Download"
+                            hint="Save to your device"
+                            component="a"
+                            href={`https://drive.google.com/uc?export=download&id=${doc.driveFileId}`}
+                            target="_blank"
+                        />
+                    </Box>
+                </CardContent>
+            </Card>
+
+            {/* MANAGE */}
+            <Card>
+                <CardContent sx={{ p: 2.5, "&:last-child": { pb: 2.5 } }}>
+                    <Typography sx={{
+                        fontFamily: "'JetBrains Mono', monospace",
+                        fontSize: "0.625rem",
+                        fontWeight: 700,
+                        letterSpacing: "0.1em",
+                        color: "text.secondary",
+                        mb: 1.5,
+                        textTransform: "uppercase",
+                        display: "flex", alignItems: "center", gap: 0.75,
+                    }}>
+                        <EditIcon sx={{ fontSize: 12 }} />
+                        Manage
+                    </Typography>
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
+                        <ActionButton
+                            icon={<EditIcon />}
+                            label="Edit Details"
+                            hint="Change title, expiry, etc."
+                            onClick={() => {
+                                setEditOpen(true);
+                                setMobileActionsOpen(false);
+                            }}
+                        />
+                        <ActionButton
+                            icon={<DriveFileMoveIcon />}
+                            label="Move to Category"
+                            hint="Change organization"
+                            onClick={() => {
+                                setMoveOpen(true);
+                                setMobileActionsOpen(false);
+                            }}
+                        />
+                    </Box>
+                </CardContent>
+            </Card>
+
+            {/* DANGER ZONE */}
+            <Card
+                sx={{
+                    borderColor: "rgba(239, 68, 68, 0.2)",
+                    "&:hover": { borderColor: "rgba(239, 68, 68, 0.4)" },
+                }}
+            >
+                <CardContent sx={{ p: 2.5, "&:last-child": { pb: 2.5 } }}>
+                    <Typography sx={{
+                        fontFamily: "'JetBrains Mono', monospace",
+                        fontSize: "0.625rem",
+                        fontWeight: 700,
+                        letterSpacing: "0.1em",
+                        color: "#EF4444",
+                        mb: 1.5,
+                        textTransform: "uppercase",
+                        display: "flex", alignItems: "center", gap: 0.75,
+                    }}>
+                        <DeleteOutlineIcon sx={{ fontSize: 12 }} />
+                        Danger Zone
+                    </Typography>
+                    <ActionButton
+                        icon={<DeleteOutlineIcon />}
+                        label={deleting ? "Deleting..." : "Delete Document"}
+                        hint="This cannot be undone"
+                        onClick={() => {
+                            setDeleteOpen(true);
+                            setMobileActionsOpen(false);
+                        }}
+                        disabled={deleting}
+                        variant="danger"
+                    />
+                </CardContent>
+            </Card>
+        </>
+    );
+
     return (
         <PageContainer>
             <PageHeader
@@ -190,200 +394,211 @@ export default function DocumentDetail() {
                 />
             )}
 
+            {/* ============ COLLAPSIBLE ACTIONS (MOBILE ONLY) ============ */}
+            <Box sx={{ display: { xs: "block", lg: "none" }, mb: 2 }}>
+                {/* Toggle Button */}
+                <Box
+                    onClick={() => setMobileActionsOpen(!mobileActionsOpen)}
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        p: 2,
+                        borderRadius: 2,
+                        border: "1px solid",
+                        borderColor: mobileActionsOpen ? "primary.main" : "divider",
+                        bgcolor: mobileActionsOpen ? "rgba(139, 92, 246, 0.05)" : "background.paper",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                        "&:hover": {
+                            borderColor: "primary.main",
+                            bgcolor: "rgba(139, 92, 246, 0.05)",
+                        },
+                    }}
+                >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                        <Box
+                            sx={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: 1.5,
+                                background: "linear-gradient(135deg, #8B5CF6, #EC4899)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                boxShadow: "0 2px 8px -2px rgba(139, 92, 246, 0.5)",
+                            }}
+                        >
+                            <TuneIcon sx={{ color: "white", fontSize: 16 }} />
+                        </Box>
+                        <Box>
+                            <Typography
+                                variant="body2"
+                                fontWeight={700}
+                                sx={{ fontSize: "0.875rem", lineHeight: 1.2 }}
+                            >
+                                Actions
+                            </Typography>
+                            <Typography
+                                sx={{
+                                    fontSize: "0.6875rem",
+                                    color: "text.secondary",
+                                    fontFamily: "'JetBrains Mono', monospace",
+                                    letterSpacing: "0.05em",
+                                }}
+                            >
+                                {mobileActionsOpen ? "Tap to collapse" : "Chat, Edit, Delete & more"}
+                            </Typography>
+                        </Box>
+                    </Box>
+                    <IconButton
+                        size="small"
+                        sx={{
+                            transform: mobileActionsOpen ? "rotate(180deg)" : "rotate(0deg)",
+                            transition: "transform 0.25s ease",
+                            color: mobileActionsOpen ? "primary.main" : "text.secondary",
+                        }}
+                    >
+                        <ExpandMoreIcon />
+                    </IconButton>
+                </Box>
+
+                {/* Collapsible Content */}
+                <Collapse in={mobileActionsOpen} timeout={300}>
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
+                        <ActionsContent />
+                    </Box>
+                </Collapse>
+            </Box>
+
+            {/* ============ MAIN GRID (Desktop full, Mobile Details only) ============ */}
             <Box sx={{
                 display: "grid",
-                gap: 3,
+                gap: { xs: 2, lg: 3 },
                 gridTemplateColumns: { xs: "1fr", lg: "1fr 340px" },
                 alignItems: "start",
             }}>
-                {/* Left: Details */}
-                <Card>
-                    <CardContent sx={{ p: 3, "&:last-child": { pb: 3 } }}>
-                        <Typography sx={{
-                            fontFamily: "'JetBrains Mono', monospace",
-                            fontSize: "0.6875rem",
-                            fontWeight: 700,
-                            letterSpacing: "0.1em",
-                            color: "primary.main",
-                            mb: 1,
-                            textTransform: "uppercase",
-                        }}>
-                            Document Details
-                        </Typography>
-                        <Divider sx={{ mb: 0.5 }} />
+                {/* LEFT: Details + Insights (always visible) */}
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
 
-                        <MetadataRow
-                            icon={<DescriptionIcon />}
-                            label="File Type"
-                            value={doc.fileType || "Unknown"}
-                            mono
-                        />
-                        <MetadataRow
-                            icon={<CalendarTodayIcon />}
-                            label="Expiry Date"
-                            value={
-                                doc.expiryDate ? (
-                                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-                                        <Box component="span" sx={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                                            {new Date(doc.expiryDate).toLocaleDateString("en-US", {
-                                                month: "long", day: "numeric", year: "numeric",
-                                            })}
-                                        </Box>
-                                        {expiryInfo && (
-                                            <Chip
-                                                label={expiryInfo.text}
-                                                size="small"
-                                                sx={{
-                                                    bgcolor: `${expiryInfo.color}20`,
-                                                    color: expiryInfo.color,
-                                                    border: `1px solid ${expiryInfo.color}40`,
-                                                    fontWeight: 600,
-                                                    fontSize: "0.6875rem",
-                                                    height: 22,
-                                                    fontFamily: "'JetBrains Mono', monospace",
-                                                }}
-                                            />
-                                        )}
-                                        {doc.userVerifiedExpiry && (
-                                            <Chip
-                                                icon={<CheckCircleOutlineIcon sx={{ fontSize: "14px !important" }} />}
-                                                label="Verified"
-                                                size="small"
-                                                sx={{
-                                                    bgcolor: "rgba(16, 185, 129, 0.15)",
-                                                    color: "#10B981",
-                                                    border: "1px solid rgba(16, 185, 129, 0.35)",
-                                                    fontWeight: 600,
-                                                    fontSize: "0.6875rem",
-                                                    height: 22,
-                                                    fontFamily: "'JetBrains Mono', monospace",
-                                                    "& .MuiChip-icon": { color: "#10B981", ml: 0.5 },
-                                                }}
-                                            />
-                                        )}
-                                    </Box>
-                                ) : doc.scanStatus === "DONE" ? (
-                                    <Typography
-                                        variant="body2"
-                                        sx={{ color: "#F59E0B", fontStyle: "italic", fontSize: "0.875rem" }}
-                                    >
-                                        AI couldn't detect date — please set manually
-                                    </Typography>
-                                ) : (
-                                    <Typography
-                                        variant="body2"
-                                        color="text.disabled"
-                                        fontStyle="italic"
-                                        sx={{ fontSize: "0.875rem" }}
-                                    >
-                                        Not set — AI will extract this
-                                    </Typography>
-                                )
-                            }
-                        />
-                        {doc.detectedDocumentType && (
+                    {/* Document Details Card */}
+                    <Card>
+                        <CardContent sx={{ p: 3, "&:last-child": { pb: 3 } }}>
+                            <Typography sx={{
+                                fontFamily: "'JetBrains Mono', monospace",
+                                fontSize: "0.6875rem",
+                                fontWeight: 700,
+                                letterSpacing: "0.1em",
+                                color: "primary.main",
+                                mb: 1,
+                                textTransform: "uppercase",
+                            }}>
+                                Document Details
+                            </Typography>
+                            <Divider sx={{ mb: 0.5 }} />
+
                             <MetadataRow
-                                icon={<CategoryIcon />}
-                                label="Detected Type"
-                                value={doc.detectedDocumentType}
+                                icon={<DescriptionIcon />}
+                                label="File Type"
+                                value={doc.fileType || "Unknown"}
+                                mono
                             />
-                        )}
-                        <MetadataRow
-                            icon={<FingerprintIcon />}
-                            label="Document ID"
-                            value={`#${String(doc.id).padStart(6, "0")}`}
-                            mono
-                        />
-                    </CardContent>
-                </Card>
+                            <MetadataRow
+                                icon={<CalendarTodayIcon />}
+                                label="Expiry Date"
+                                value={
+                                    doc.expiryDate ? (
+                                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+                                            <Box component="span" sx={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                                                {new Date(doc.expiryDate).toLocaleDateString("en-US", {
+                                                    month: "long", day: "numeric", year: "numeric",
+                                                })}
+                                            </Box>
+                                            {expiryInfo && (
+                                                <Chip
+                                                    label={expiryInfo.text}
+                                                    size="small"
+                                                    sx={{
+                                                        bgcolor: `${expiryInfo.color}20`,
+                                                        color: expiryInfo.color,
+                                                        border: `1px solid ${expiryInfo.color}40`,
+                                                        fontWeight: 600,
+                                                        fontSize: "0.6875rem",
+                                                        height: 22,
+                                                        fontFamily: "'JetBrains Mono', monospace",
+                                                    }}
+                                                />
+                                            )}
+                                            {doc.userVerifiedExpiry && (
+                                                <Chip
+                                                    icon={<CheckCircleOutlineIcon sx={{ fontSize: "14px !important" }} />}
+                                                    label="Verified"
+                                                    size="small"
+                                                    sx={{
+                                                        bgcolor: "rgba(16, 185, 129, 0.15)",
+                                                        color: "#10B981",
+                                                        border: "1px solid rgba(16, 185, 129, 0.35)",
+                                                        fontWeight: 600,
+                                                        fontSize: "0.6875rem",
+                                                        height: 22,
+                                                        fontFamily: "'JetBrains Mono', monospace",
+                                                        "& .MuiChip-icon": { color: "#10B981", ml: 0.5 },
+                                                    }}
+                                                />
+                                            )}
+                                        </Box>
+                                    ) : doc.scanStatus === "DONE" ? (
+                                        <Typography
+                                            variant="body2"
+                                            sx={{ color: "#F59E0B", fontStyle: "italic", fontSize: "0.875rem" }}
+                                        >
+                                            AI couldn't detect date — please set manually
+                                        </Typography>
+                                    ) : (
+                                        <Typography
+                                            variant="body2"
+                                            color="text.disabled"
+                                            fontStyle="italic"
+                                            sx={{ fontSize: "0.875rem" }}
+                                        >
+                                            Not set — AI will extract this
+                                        </Typography>
+                                    )
+                                }
+                            />
+                            {doc.detectedDocumentType && (
+                                <MetadataRow
+                                    icon={<CategoryIcon />}
+                                    label="Detected Type"
+                                    value={doc.detectedDocumentType}
+                                />
+                            )}
+                            <MetadataRow
+                                icon={<FingerprintIcon />}
+                                label="Document ID"
+                                value={`#${String(doc.id).padStart(6, "0")}`}
+                                mono
+                            />
+                        </CardContent>
+                    </Card>
 
-                {/* Right: Actions */}
-                <Card>
-                    <CardContent sx={{ p: 3, "&:last-child": { pb: 3 } }}>
-                        <Typography sx={{
-                            fontFamily: "'JetBrains Mono', monospace",
-                            fontSize: "0.6875rem",
-                            fontWeight: 700,
-                            letterSpacing: "0.1em",
-                            color: "primary.main",
-                            mb: 2.5,
-                            textTransform: "uppercase",
-                        }}>
-                            Actions
-                        </Typography>
+                    {/* AI Insights Panel */}
+                    <InsightsPanel document={doc} onRefresh={loadDocument} />
+                </Box>
 
-                        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
-                            
-                            {/* File actions */}
-                            <Button
-                                variant="contained"
-                                startIcon={<OpenInNewIcon />}
-                                component="a"
-                                href={doc.driveFileLink}
-                                target="_blank"
-                                fullWidth
-                                sx={{ boxShadow: "0 4px 14px -4px rgba(139, 92, 246, 0.5)" }}
-                            >
-                                Open in Drive
-                            </Button>
-
-                            <Button
-                                variant="outlined"
-                                startIcon={<DownloadIcon />}
-                                component="a"
-                                href={`https://drive.google.com/uc?export=download&id=${doc.driveFileId}`}
-                                target="_blank"
-                                fullWidth
-                            >
-                                Download
-                            </Button>
-
-                            <Divider sx={{ my: 1 }} />
-
-                            {/* Document actions */}
-                            <Button
-                                variant="outlined"
-                                startIcon={<EditIcon />}
-                                onClick={() => setEditOpen(true)}
-                                fullWidth
-                            >
-                                Edit Details
-                            </Button>
-
-                            <Button
-                                variant="outlined"
-                                startIcon={<DriveFileMoveIcon />}
-                                onClick={() => setMoveOpen(true)}
-                                fullWidth
-                            >
-                                Move to Category
-                            </Button>
-
-                            <Divider sx={{ my: 1 }} />
-
-                            {/* Danger zone */}
-                            <Button
-                                variant="outlined"
-                                startIcon={<DeleteOutlineIcon />}
-                                onClick={() => setDeleteOpen(true)}
-                                disabled={deleting}
-                                fullWidth
-                                sx={{
-                                    borderColor: "rgba(239, 68, 68, 0.35)",
-                                    color: "#EF4444",
-                                    "&:hover": {
-                                        borderColor: "#EF4444",
-                                        background: "rgba(239, 68, 68, 0.1)",
-                                    },
-                                }}
-                            >
-                                {deleting ? "Deleting..." : "Delete Document"}
-                            </Button>
-                        </Box>
-                    </CardContent>
-                </Card>
+                {/* RIGHT: Actions Sidebar (Desktop only) */}
+                <Box sx={{
+                    display: { xs: "none", lg: "flex" },
+                    flexDirection: "column",
+                    gap: 2,
+                    position: "sticky",
+                    top: 16,
+                }}>
+                    <ActionsContent />
+                </Box>
             </Box>
 
+            {/* ============ MODALS ============ */}
             <EditDocumentModal
                 open={editOpen}
                 onClose={() => setEditOpen(false)}

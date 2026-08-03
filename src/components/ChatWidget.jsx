@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { registerChatOpener } from "./chatBus";
 import {
     Box, Typography, TextField, IconButton, Paper, CircularProgress,
     Fab, Slide, Backdrop, Tooltip, Zoom, Badge
@@ -32,6 +33,39 @@ const MIN_WIDTH = 400;
 const MAX_WIDTH = 900;
 const DEFAULT_WIDTH = 520;
 
+// ============ SUGGESTIONS (document-aware) ============
+const getSuggestions = (docContext) => {
+    if (!docContext) return SUGGESTED_PROMPTS;
+
+    const type = (docContext.detectedDocumentType || "").toLowerCase();
+    if (type.includes("passport")) {
+        return [
+            { icon: "📅", text: "When should I renew this passport?" },
+            { icon: "✈️", text: "Can I travel with this validity?" },
+            { icon: "📋", text: "What do I need for renewal?" },
+        ];
+    }
+    if (type.includes("visa")) {
+        return [
+            { icon: "⏰", text: "How do I extend this visa?" },
+            { icon: "📋", text: "What are the visa conditions?" },
+            { icon: "🚨", text: "What happens if it expires?" },
+        ];
+    }
+    if (type.includes("work")) {
+        return [
+            { icon: "📄", text: "How do I renew this work permit?" },
+            { icon: "⚠️", text: "What are the work restrictions?" },
+            { icon: "🏢", text: "Can I change employers?" },
+        ];
+    }
+    return [
+        { icon: "💡", text: "Explain this document to me" },
+        { icon: "📅", text: "What are the important dates?" },
+        { icon: "⚠️", text: "What should I be aware of?" },
+    ];
+};
+
 export default function ChatWidget({ isMobile = false, topbarHeight = 60 }) {
     const location = useLocation();
     const [open, setOpen] = useState(false);
@@ -39,6 +73,7 @@ export default function ChatWidget({ isMobile = false, topbarHeight = 60 }) {
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
     const [hasUnread, setHasUnread] = useState(false);
+    const [documentContext, setDocumentContext] = useState(null);
 
     // ============ RESIZE STATE ============
     const [panelWidth, setPanelWidth] = useState(() => {
@@ -79,6 +114,20 @@ export default function ChatWidget({ isMobile = false, topbarHeight = 60 }) {
         document.addEventListener("keydown", handler);
         return () => document.removeEventListener("keydown", handler);
     }, [open]);
+
+    // ============ REGISTER GLOBAL "OPEN WITH DOCUMENT" ============
+    useEffect(() => {
+        return registerChatOpener((document) => {
+            setDocumentContext(document);
+            setOpen(true);
+            setMessages([
+                {
+                    role: "assistant",
+                    content: `[DOC]Hi! I'm here to help you with **${document.title}**. 📄\n\nAsk me anything about this specific document — I have full context about its details, expiry, and rules.`,
+                },
+            ]);
+        });
+    }, []);
 
     // ============ HANDLE DRAG-TO-RESIZE ============
     useEffect(() => {
@@ -124,7 +173,12 @@ export default function ChatWidget({ isMobile = false, topbarHeight = 60 }) {
         setLoading(true);
 
         try {
-            const res = await api.post("/chat", { question });
+            // Use document-scoped endpoint if in doc context
+            const endpoint = documentContext
+                ? `/documents/${documentContext.id}/chat`
+                : "/chat";
+
+            const res = await api.post(endpoint, { question });
             setMessages((prev) => [
                 ...prev,
                 { role: "assistant", content: res.data.answer },
@@ -149,7 +203,14 @@ export default function ChatWidget({ isMobile = false, topbarHeight = 60 }) {
 
     const clearChat = () => {
         setMessages([WELCOME]);
+        setDocumentContext(null);
         toast.success("Chat cleared");
+    };
+
+    const clearDocumentContext = () => {
+        setDocumentContext(null);
+        setMessages([WELCOME]);
+        toast.success("Now chatting about all documents");
     };
 
     const showSuggestions = messages.length === 1;
@@ -284,7 +345,6 @@ export default function ChatWidget({ isMobile = false, topbarHeight = 60 }) {
                             }),
                         }}
                     >
-                        {/* Resize bar */}
                         <Box
                             className="resize-bar"
                             sx={{
@@ -300,7 +360,6 @@ export default function ChatWidget({ isMobile = false, topbarHeight = 60 }) {
                                 pointerEvents: "none",
                             }}
                         />
-                        {/* Drag icon indicator */}
                         <Box
                             className="resize-handle-icon"
                             sx={{
@@ -415,6 +474,81 @@ export default function ChatWidget({ isMobile = false, topbarHeight = 60 }) {
                         </Box>
                     </Box>
 
+                    {/* ============ DOCUMENT CONTEXT PILL ============ */}
+                    {documentContext && (
+                        <Box
+                            sx={{
+                                px: 3,
+                                py: 1.5,
+                                borderBottom: "1px solid",
+                                borderColor: "divider",
+                                bgcolor: "rgba(139, 92, 246, 0.06)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: 1,
+                                animation: "slideDown 0.3s ease",
+                                "@keyframes slideDown": {
+                                    "0%": { opacity: 0, transform: "translateY(-8px)" },
+                                    "100%": { opacity: 1, transform: "translateY(0)" },
+                                },
+                            }}
+                        >
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0, flex: 1 }}>
+                                <Box
+                                    sx={{
+                                        width: 6,
+                                        height: 6,
+                                        borderRadius: "50%",
+                                        bgcolor: "primary.main",
+                                        boxShadow: "0 0 6px rgba(139, 92, 246, 0.6)",
+                                        flexShrink: 0,
+                                    }}
+                                />
+                                <Typography
+                                    sx={{
+                                        fontFamily: "'JetBrains Mono', monospace",
+                                        fontSize: "0.6875rem",
+                                        fontWeight: 700,
+                                        letterSpacing: "0.08em",
+                                        color: "primary.main",
+                                        textTransform: "uppercase",
+                                        flexShrink: 0,
+                                    }}
+                                >
+                                    Discussing:
+                                </Typography>
+                                <Typography
+                                    variant="body2"
+                                    sx={{
+                                        fontSize: "0.8125rem",
+                                        fontWeight: 600,
+                                        color: "text.primary",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                        whiteSpace: "nowrap",
+                                    }}
+                                >
+                                    {documentContext.title}
+                                </Typography>
+                            </Box>
+                            <Tooltip title="Clear document context">
+                                <IconButton
+                                    size="small"
+                                    onClick={clearDocumentContext}
+                                    sx={{
+                                        width: 22,
+                                        height: 22,
+                                        color: "text.secondary",
+                                        "&:hover": { color: "primary.main" },
+                                    }}
+                                >
+                                    <CloseIcon sx={{ fontSize: 14 }} />
+                                </IconButton>
+                            </Tooltip>
+                        </Box>
+                    )}
+
                     {/* ============ MESSAGES AREA ============ */}
                     <Box
                         sx={{
@@ -423,7 +557,6 @@ export default function ChatWidget({ isMobile = false, topbarHeight = 60 }) {
                             px: 3,
                             py: 3,
                             position: "relative",
-                            // Custom scrollbar
                             "&::-webkit-scrollbar": { width: 6 },
                             "&::-webkit-scrollbar-track": { background: "transparent" },
                             "&::-webkit-scrollbar-thumb": {
@@ -431,7 +564,6 @@ export default function ChatWidget({ isMobile = false, topbarHeight = 60 }) {
                                 borderRadius: 3,
                                 "&:hover": { bgcolor: "rgba(139, 92, 246, 0.5)" },
                             },
-                            // Ambient glow at top
                             "&::before": {
                                 content: '""',
                                 position: "sticky",
@@ -523,7 +655,7 @@ export default function ChatWidget({ isMobile = false, topbarHeight = 60 }) {
                                     ✨ Try asking
                                 </Typography>
                                 <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                                    {SUGGESTED_PROMPTS.map((prompt, i) => (
+                                    {getSuggestions(documentContext).map((prompt, i) => (
                                         <Paper
                                             key={i}
                                             onClick={() => sendMessage(prompt.text)}
@@ -602,7 +734,7 @@ export default function ChatWidget({ isMobile = false, topbarHeight = 60 }) {
                                 fullWidth
                                 multiline
                                 maxRows={6}
-                                placeholder="Ask about your documents..."
+                                placeholder={documentContext ? `Ask about ${documentContext.title}...` : "Ask about your documents..."}
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyDown={handleKeyDown}
