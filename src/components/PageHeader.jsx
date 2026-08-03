@@ -123,7 +123,13 @@ export default function PageHeader({
                         </IconButton>
                     )}
                     <Box sx={{ minWidth: 0, flex: 1 }}>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
+                        <Box sx={{ 
+                            display: "flex", 
+                            alignItems: "center", 
+                            gap: 1.5, 
+                            flexWrap: "wrap",
+                            justifyContent: "space-between",
+                        }}>
                             <Typography
                                 variant="h4"
                                 fontWeight={700}
@@ -131,11 +137,16 @@ export default function PageHeader({
                                 sx={{
                                     overflow: "hidden",
                                     textOverflow: "ellipsis",
+                                    minWidth: 0,
                                 }}
                             >
                                 {title}
                             </Typography>
-                            {titleAdornment}
+                            {titleAdornment && (
+                                <Box sx={{ flexShrink: 0, ml: "auto" }}>
+                                    {titleAdornment}
+                                </Box>
+                            )}
                         </Box>
                         {subtitle && (
                             <Typography
