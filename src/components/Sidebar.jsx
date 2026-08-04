@@ -1,11 +1,10 @@
 import React from "react";
 import {
     Box, Typography, ListItemButton, ListItemIcon, ListItemText,
-    IconButton, Tooltip, Avatar, Divider, Drawer
+    IconButton, Tooltip, Divider, Drawer
 } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
 import DashboardIcon from "@mui/icons-material/SpaceDashboard";
-import LogoutIcon from "@mui/icons-material/Logout";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import KeyboardIcon from "@mui/icons-material/KeyboardCommandKey";
@@ -13,6 +12,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { useThemeMode } from "../theme/useThemeMode";
 import ThemeToggle from "./ThemeToggle";
 import Logo from "./Logo";
+import AccountMenu from "./AccountMenu";
 
 const NAV_SECTIONS = [
     {
@@ -33,17 +33,11 @@ export default function Sidebar({
 }) {
     const navigate = useNavigate();
     const location = useLocation();
-    const email = localStorage.getItem("email");
     const { mode } = useThemeMode();
     const isDark = mode === "dark";
 
-    const handleLogout = () => {
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("email");
-        navigate("/login");
-    };
-
-    const isActive = (path) => (path === "/app" ? location.pathname === "/app" : location.pathname.startsWith(path));
+    const isActive = (path) =>
+        path === "/app" ? location.pathname === "/app" : location.pathname.startsWith(path);
 
     const openPalette = () => {
         document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }));
@@ -55,10 +49,9 @@ export default function Sidebar({
         if (isMobile) onMobileClose();
     };
 
-    // On mobile, sidebar always renders as "open" (not collapsed)
     const effectiveCollapsed = isMobile ? false : collapsed;
 
-    // ============ SIDEBAR CONTENT (shared by desktop + mobile) ============
+    // ============ SIDEBAR CONTENT ============
     const sidebarContent = (
         <Box
             sx={{
@@ -116,7 +109,7 @@ export default function Sidebar({
                 )}
             </Box>
 
-            {/* ============ COMMAND PALETTE TRIGGER (desktop only) ============ */}
+            {/* ============ COMMAND PALETTE TRIGGER ============ */}
             {!effectiveCollapsed && !isMobile && (
                 <Box sx={{ px: 1.5, pt: 2 }}>
                     <Box
@@ -259,82 +252,21 @@ export default function Sidebar({
 
             <Divider />
 
-            {/* ============ USER + LOGOUT ============ */}
-            <Box sx={{ p: effectiveCollapsed ? 1 : 2 }}>
-                {!effectiveCollapsed && (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1, px: 1 }}>
-                        <Avatar
-                            sx={{
-                                width: 32,
-                                height: 32,
-                                background: "linear-gradient(135deg, #8B5CF6, #EC4899)",
-                                fontSize: "0.875rem",
-                                fontWeight: 600,
-                            }}
-                        >
-                            {email?.[0]?.toUpperCase() || "U"}
-                        </Avatar>
-                        <Box sx={{ overflow: "hidden", flex: 1 }}>
-                            <Typography variant="body2" fontWeight={500} noWrap sx={{ fontSize: "0.8125rem" }}>
-                                {email?.split("@")[0]}
-                            </Typography>
-                            <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                noWrap
-                                sx={{ fontSize: "0.6875rem", display: "block" }}
-                            >
-                                {email}
-                            </Typography>
-                        </Box>
-                    </Box>
-                )}
-                <Tooltip title={effectiveCollapsed ? "Logout" : ""} placement="right">
-                    <ListItemButton
-                        onClick={handleLogout}
-                        sx={{
-                            borderRadius: 2,
-                            px: effectiveCollapsed ? 0 : 1.5,
-                            py: 1,
-                            justifyContent: effectiveCollapsed ? "center" : "flex-start",
-                            color: "text.secondary",
-                            "&:hover": {
-                                bgcolor: isDark ? "rgba(239, 68, 68, 0.1)" : "#FEE2E2",
-                                color: "#EF4444",
-                            },
-                        }}
-                    >
-                        <ListItemIcon
-                            sx={{
-                                minWidth: 0,
-                                mr: effectiveCollapsed ? 0 : 2,
-                                color: "inherit",
-                                justifyContent: "center",
-                                "& .MuiSvgIcon-root": { fontSize: 18 },
-                            }}
-                        >
-                            <LogoutIcon />
-                        </ListItemIcon>
-                        {!effectiveCollapsed && (
-                            <ListItemText
-                                primary="Logout"
-                                primaryTypographyProps={{ fontSize: "0.875rem", fontWeight: 500 }}
-                            />
-                        )}
-                    </ListItemButton>
-                </Tooltip>
+            {/* ============ ACCOUNT MENU ============ */}
+            <Box sx={{ p: effectiveCollapsed ? 1 : 1.5 }}>
+                <AccountMenu collapsed={effectiveCollapsed} />
             </Box>
         </Box>
     );
 
-    // ============ MOBILE: RENDER AS DRAWER ============
+    // ============ MOBILE: DRAWER ============
     if (isMobile) {
         return (
             <Drawer
                 anchor="left"
                 open={mobileOpen}
                 onClose={onMobileClose}
-                ModalProps={{ keepMounted: true }} // better performance on mobile
+                ModalProps={{ keepMounted: true }}
                 sx={{
                     "& .MuiDrawer-paper": {
                         width: 280,
@@ -348,7 +280,7 @@ export default function Sidebar({
         );
     }
 
-    // ============ DESKTOP: RENDER AS FIXED SIDEBAR ============
+    // ============ DESKTOP: FIXED ============
     return (
         <Box
             sx={{
