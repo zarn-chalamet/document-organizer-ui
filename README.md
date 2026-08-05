@@ -2,11 +2,22 @@
 
 React frontend for [Document Organizer](https://github.com/zarn-chalamet/document-organizer) — a secure, PDPA-compliant document management app with AI-powered scanning, proactive document insights, and a friendly contextual AI assistant. Files are stored in the user's own Google Drive, never on our servers.
 
-## Repositories
+## 🌐 Live Deployment
 
-- **Frontend (this repo):** https://github.com/zarn-chalamet/document-organizer-ui
-- **Backend:** https://github.com/zarn-chalamet/document-organizer
-- **AI Sidecar:** https://github.com/zarn-chalamet/document-organizer-ai
+| Service | Platform | URL |
+|---------|----------|-----|
+| **Frontend** | Vercel | [document-organizer-bice.vercel.app](https://document-organizer-bice.vercel.app) |
+| **Backend** | Google Cloud Run | [document-organizer-backend](https://document-organizer-backend-572822241973.asia-southeast1.run.app) |
+| **AI Sidecar** | Google Cloud Run | *(internal — not publicly documented)* |
+| **Database** | Neon (PostgreSQL + pgvector) | Managed |
+
+## 📦 Repositories
+
+| Repo | Tech | Description |
+|------|------|-------------|
+| [document-organizer-ui](https://github.com/zarn-chalamet/document-organizer-ui) | React · Vite | Frontend SPA (this repo) |
+| [document-organizer](https://github.com/zarn-chalamet/document-organizer) | Java · Spring Boot | Backend API + auth + business logic |
+| [document-organizer-ai](https://github.com/zarn-chalamet/document-organizer-ai) | Python · FastAPI | AI/ML microservice (OCR, embeddings, LLM) |
 
 ## Problem It Solves
 
@@ -14,14 +25,16 @@ People — especially foreigners managing visas across countries — have import
 
 ## Tech Stack
 
-- **Framework:** React 18 + Vite
-- **UI Library:** Material-UI (MUI) v5 with custom dark theme
-- **Routing:** React Router v6
+- **Framework:** React 19 + Vite 7
+- **UI Library:** Material-UI (MUI) v7 with custom dark theme
+- **Routing:** React Router v7
 - **HTTP Client:** Axios (with JWT interceptor)
 - **Notifications:** Sonner (toast notifications)
 - **Icons:** Material Icons
 - **Fonts:** Inter + JetBrains Mono
 - **Auth:** JWT stored in `localStorage` (issued by backend after Google OAuth)
+- **Hosting:** Vercel (global CDN, auto-deploy from GitHub)
+- **CI/CD:** GitHub → Vercel webhook (auto-deploy on push)
 
 ## Design Philosophy
 
@@ -83,7 +96,7 @@ Each AI component was chosen deliberately for its privacy profile:
 | Component | Runs Where | Why |
 |-----------|-----------|-----|
 | **OCR (Google Vision)** | Google Cloud (transient) | Same trust boundary as Google Drive |
-| **Embeddings (sentence-transformers)** | **Locally on our server** | Vectors never leave infrastructure |
+| **Embeddings (sentence-transformers)** | **Locally on our container** | Vectors never leave infrastructure |
 | **Metadata extraction (Groq)** | Groq API | Only extracted TEXT sent, never images |
 | **Insights generation (Groq)** | Groq API | Only doc type + expiry + text preview |
 | **Chat responses (Groq)** | Groq API | Only relevant text chunks + question |
@@ -103,12 +116,13 @@ Each AI component was chosen deliberately for its privacy profile:
 - **JWT sessions** with 2-day expiry (HS256 signed)
 - **Automatic token refresh** for Google API calls
 - **User-scoped queries** — pgvector search filters by `user_id` (impossible to leak across users)
-- **CORS restricted** to `localhost:5173` in development
+- **CORS restricted** to specific allowed origins
 - **Route protection** — unauthenticated users auto-redirect to login
 - **JWT interceptor** — auto-attaches token to every API request
 - **401 handling** — expired tokens trigger logout + redirect
 - **Terms & Privacy modal** — reviewable content on login page
-- **HTTPS-ready** — production deployment will use TLS everywhere
+- **HTTPS everywhere** — enforced via Vercel + Cloud Run
+- **Hash-based token delivery** — JWT never sent to server logs
 
 ### What This Means for Users
 
@@ -143,7 +157,7 @@ Each AI component was chosen deliberately for its privacy profile:
 - **LLM date extraction** — Groq Llama intelligently finds expiry dates in messy OCR text
 - **Auto-fill expiry dates** — AI suggests, user confirms via verification banner
 
-#### 🌟 AI Insights (NEW)
+#### 🌟 AI Insights
 Every scanned document gets a beautifully rendered **Insights Panel** with:
 - **Summary** — one-sentence description of what the document is
 - **Next Action Card** — clear action with deadline + urgency (URGENT / SOON / UPCOMING / NO RUSH)
@@ -195,12 +209,62 @@ Every scanned document gets a beautifully rendered **Insights Panel** with:
 - Empty states with clear CTAs
 - **Grouped action cards** — hero (Ask AI) → file → manage → danger zone
 
-## Setup
+## 🌐 Deployment
+
+### Infrastructure
+
+| Component | Service | Details |
+|-----------|---------|---------|
+| **Hosting** | Vercel | Global CDN, edge network |
+| **Domain** | `.vercel.app` subdomain | Free HTTPS included |
+| **Build pipeline** | Vercel Build System | Triggered by GitHub push |
+| **SPA routing** | `vercel.json` rewrites | All routes → `index.html` |
+
+### CI/CD Pipeline
+
+```
+git push origin main
+    ↓ (webhook)
+Vercel detects push
+    ↓
+Runs npm install
+    ↓
+Runs npm run build (Vite build)
+    ↓
+Deploys dist/ to global CDN
+    ↓
+Routes traffic instantly
+    ↓
+✅ Live in ~1 minute
+```
+
+**Every `git push` to `main` triggers an automatic deployment.**
+
+### Environment Variables (Vercel Dashboard)
+
+| Variable | Purpose |
+|----------|---------|
+| `VITE_API_BASE` | Backend API base URL |
+| `VITE_OAUTH_BASE` | Backend OAuth endpoint base URL |
+
+**Note:** Only public URLs are stored — no secrets. All sensitive credentials live on the backend.
+
+## Setup (Local Development)
 
 ### Prerequisites
 - Node.js 18+
-- Backend running at `http://localhost:8080`
-- Python AI Sidecar running at `http://localhost:8000`
+- Backend running at `http://localhost:8080` (or use deployed backend)
+- Python AI Sidecar (or use deployed sidecar)
+
+### Environment Variables
+
+Create `.env` in project root:
+```env
+VITE_API_BASE=http://localhost:8080/v1/api
+VITE_OAUTH_BASE=http://localhost:8080
+```
+
+For production, `.env.production` is used automatically during `npm run build`.
 
 ### Install & Run
 ```bash
@@ -209,6 +273,12 @@ npm run dev
 ```
 
 Frontend runs on `http://localhost:5173`.
+
+### Build for Production
+```bash
+npm run build
+npm run preview
+```
 
 ## Project Structure
 
@@ -368,20 +438,22 @@ Frontend features track the [backend roadmap](https://github.com/zarn-chalamet/d
 - [x] Redesigned login with feature showcase
 - [x] Custom logo + branding
 - [x] AI verification banner (confirm/edit extracted dates)
-- [x] **Terms & Privacy Policy modal on login**
-- [x] **Public landing page with feature showcase**
-- [x] **AI Insights panel per document (summary + next action + timeline)**
-- [x] **Document-scoped AI chat with context pill**
-- [x] **Response categorization badges (DOC / NOTFOUND / GENERAL)**
-- [x] **Resizable chat panel with localStorage persistence**
-- [x] **Grouped action cards (hero / file / manage / danger)**
-- [x] **Mobile-collapsible actions panel**
-- [x] **Reusable ActionButton component**
+- [x] Terms & Privacy Policy modal on login
+- [x] Public landing page with feature showcase
+- [x] AI Insights panel per document (summary + next action + timeline)
+- [x] Document-scoped AI chat with context pill
+- [x] Response categorization badges (DOC / NOTFOUND / GENERAL)
+- [x] Resizable chat panel with localStorage persistence
+- [x] Grouped action cards (hero / file / manage / danger)
+- [x] Mobile-collapsible actions panel
+- [x] Reusable ActionButton component
+- [x] **Deployed to Vercel with CI/CD**
+- [x] **SPA routing configured via vercel.json**
+- [x] **Env-based API URLs for multi-environment support**
 
 ### 🚧 In Progress
 - [ ] PDPA consent modal on first login
 - [ ] Dedicated privacy policy page
-- [ ] Deploy to Vercel
 
 ### 🔮 Future
 - [ ] Chat history persistence
