@@ -42,7 +42,8 @@ export default function Login() {
     }, [navigate]);
 
     const handleLogin = () => {
-        window.location.href = "http://localhost:8080/oauth2/authorization/google";
+        const OAUTH_BASE = import.meta.env.VITE_OAUTH_BASE || "http://localhost:8080";
+        window.location.href = `${OAUTH_BASE}/oauth2/authorization/google`;
     };
 
     const features = [

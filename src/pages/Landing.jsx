@@ -18,7 +18,7 @@ import LanguageIcon from "@mui/icons-material/Language";
 import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
 import ArrowOutwardIcon from "@mui/icons-material/ArrowOutward";
 import Logo from "../components/Logo";
-import documetOrganizerScreenshot from "../assets/document-organizer-dashboard.png";
+import documetOrganizerScreenshot from "../assets/do-dashboard.png";
 
 // ============ SECTION LABEL ============
 const SectionLabel = ({ children, color = "primary.main" }) => (

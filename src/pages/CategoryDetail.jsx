@@ -28,7 +28,7 @@ import DeleteCategoryModal from "../components/DeleteCategoryModal";
 import BulkMoveModal from "../components/BulkMoveModal";
 import BulkDeleteModal from "../components/BulkDeleteModal";
 
-const API_BASE = "http://localhost:8080/v1/api";
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8080/v1/api";
 
 export default function CategoryDetail() {
     const { id } = useParams();
